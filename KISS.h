@@ -11,3 +11,8 @@
 #define CMD_TXTAIL 0x04
 #define CMD_FULLDUPLEX 0x05
 #define CMD_SETHARDWARE 0x06
+
+#define MAX_PAYLOAD 1522
+
+void kiss_serial_read(uint8_t sbyte);
+int kiss_write_frame(int serial_port, uint8_t* buffer, int frame_len);
