@@ -5,10 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <linux/if.h>
+#include <net/if.h>
 #include <linux/if_tun.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include "Constants.h"
 
