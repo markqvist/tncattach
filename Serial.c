@@ -1,11 +1,15 @@
 #include "Serial.h"
 
+extern void cleanup();
+
 int open_port(char* port) {
 	int fd;
 	fd = open(port, O_RDWR | O_NOCTTY | O_SYNC | O_NDELAY);
 
 	if (fd == -1) {
 		perror("The serial port could not be opened");
+		cleanup();
+		exit(1);
 	} else {
 		fcntl(fd, F_SETFL, 0);
 	}
@@ -85,7 +89,9 @@ bool setup_port(int fd, int speed) {
 			set_speed(&tty, B230400);
 			break;
 		default:
-			printf("Error: Invalid port speed %d specified", speed);
+			printf("Error: Invalid port speed %d specified\r\n", speed);
+			cleanup();
+			exit(1);
 			return false;
 	}
 

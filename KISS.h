@@ -1,3 +1,6 @@
+#include <stdint.h>
+#include "Constants.h"
+
 #define FEND 0xC0
 #define FESC 0xDB
 #define TFEND 0xDC
@@ -12,7 +15,7 @@
 #define CMD_FULLDUPLEX 0x05
 #define CMD_SETHARDWARE 0x06
 
-#define MAX_PAYLOAD 1522
+#define MAX_PAYLOAD MTU_MAX
 
 void kiss_serial_read(uint8_t sbyte);
 int kiss_write_frame(int serial_port, uint8_t* buffer, int frame_len);

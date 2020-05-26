@@ -1,0 +1,9 @@
+#define IF_TAP 1
+#define IF_TUN 2
+
+#define ETHERNET_MIN_FRAME_SIZE 14
+#define TUN_MIN_FRAME_SIZE 5
+
+#define MTU_MIN 74
+#define MTU_MAX 1522
+#define MTU_DEFAULT 329

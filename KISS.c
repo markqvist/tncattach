@@ -12,8 +12,20 @@ uint8_t kiss_command = CMD_UNKNOWN;
 uint8_t frame_buffer[MAX_PAYLOAD];
 uint8_t write_buffer[MAX_PAYLOAD*2+3];
 
+extern bool verbose;
+extern int attached_if;
+extern void cleanup(void);
+
 void kiss_frame_received(int frame_len) {
-	
+	if (verbose) printf("Got KISS frame\r\n");
+	int written = write(attached_if, frame_buffer, frame_len);
+	if (written == -1) {
+		if (verbose) printf("Could not write received KISS frame to network interface, is the interface up?\r\n");
+	} else if (written != frame_len) {
+		printf("Error: Could only write %d of %d bytes to interface", written, frame_len);
+		cleanup();
+		exit(1);
+	}
 }
 
 void kiss_serial_read(uint8_t sbyte) {
