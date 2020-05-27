@@ -27,7 +27,7 @@ sudo make install
 
 Using __tncattach__ is simple. Run the program from the command line, specifying which serial port the TNC is connected to, and the serial port baud-rate, and __tncattach__ takes care of the rest. In most cases, depending on what you intend to do, you probably want to use some of the options, though. See the examples section below for usage examples.
 
-```sh
+```
 Usage: tncattach [OPTION...] port baudrate
 
 Attach TNC devices as system network interfaces
@@ -37,7 +37,7 @@ Attach TNC devices as system network interfaces
   -i, --ipv4=IP_ADDRESS      Configure an IPv4 address on interface
   -m, --mtu=MTU              Specify interface MTU
   -n, --noipv6               Filter IPv6 traffic from reaching TNC
-      --noup                 Only create interface, do not bring it up
+      --noup                 Only create interface, don't bring it up
   -v, --verbose              Enable verbose output
   -?, --help                 Give this help list
       --usage                Give a short usage message
