@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <poll.h>
 #include <argp.h>
+#include <syslog.h>
+#include <sys/stat.h>
 #include "Constants.h"
 #include "Serial.h"
 #include "KISS.h"
@@ -42,8 +44,14 @@ void cleanup(void) {
 }
 
 void signal_handler(int signal) {
-	cleanup();
-	exit(0);
+	if (daemonize) {
+		cleanup();
+		syslog(LOG_NOTICE, "tncattach daemon exiting");
+		exit(0);
+	} else {
+		cleanup();
+		exit(0);
+	}
 }
 
 bool is_ipv6(uint8_t* frame) {
@@ -74,7 +82,12 @@ void read_loop(void) {
 	} else if (device_type == IF_TUN) {
 		min_frame_size = TUN_MIN_FRAME_SIZE;
 	} else {
-		printf("Error: Unsupported interface type\r\n");
+		if (daemonize) {
+			syslog(LOG_ERR, "Unsupported interface type");
+		} else {
+			printf("Error: Unsupported interface type\r\n");
+		}
+		
 		cleanup();
 		exit(1);
 	}
@@ -88,12 +101,20 @@ void read_loop(void) {
 					// Check for hangup event
 					if (fds[fdi].revents & POLLHUP) {
 						if (fdi == IF_FD_INDEX) {
-							printf("Received hangup from interface\r\n");
+							if (daemonize) {
+								syslog(LOG_ERR, "Received hangup from interface");
+							} else {
+								printf("Received hangup from interface\r\n");	
+							}
 							cleanup();
 							exit(1);
 						}
 						if (fdi == TNC_FD_INDEX) {
-							printf("Received hangup from TNC\r\n");
+							if (daemonize) {
+								syslog(LOG_ERR, "Received hangup from TNC");
+							} else {
+								printf("Received hangup from TNC\r\n");	
+							}
 							cleanup();
 							exit(1);
 						}
@@ -102,12 +123,20 @@ void read_loop(void) {
 					// Check for error event
 					if (fds[fdi].revents & POLLERR) {
 						if (fdi == IF_FD_INDEX) {
-							perror("Received error event from interface\r\n");
+							if (daemonize) {
+								syslog(LOG_ERR, "Received error event from interface");
+							} else {
+								perror("Received error event from interface\r\n");
+							}
 							cleanup();
 							exit(1);
 						}
 						if (fdi == TNC_FD_INDEX) {
-							perror("Received error event from TNC\r\n");
+							if (daemonize) {
+								syslog(LOG_ERR, "Received error event from TNC");
+							} else {
+								perror("Received error event from TNC\r\n");	
+							}
 							cleanup();
 							exit(1);
 						}
@@ -124,7 +153,11 @@ void read_loop(void) {
 									}
 								}
 							} else {
-								printf("Error: Could not read from network interface, exiting now\r\n");
+								if (daemonize) {
+									syslog(LOG_ERR, "Could not read from network interface, exiting now");
+								} else {
+									printf("Error: Could not read from network interface, exiting now\r\n");	
+								}
 								cleanup();
 								exit(1);
 							}
@@ -138,7 +171,12 @@ void read_loop(void) {
 									kiss_serial_read(serial_buffer[i]);
 								}
 							} else {
-								printf("Error: Could not read from TNC, exiting now\r\n");
+								if (daemonize) {
+									syslog(LOG_ERR, "Could not read from TNC, exiting now");
+								} else {
+									printf("Error: Could not read from TNC, exiting now\r\n");
+								}
+								
 								cleanup();
 								exit(1);
 							}
@@ -363,6 +401,34 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 	return 0;
 }
 
+static void become_daemon() {
+    pid_t pid;
+    pid = fork();
+
+    if (pid < 0) {
+    	perror("Fork failed");
+    	exit(EXIT_FAILURE);
+    }
+
+    if (pid > 0) {
+        exit(0);
+    }
+
+    if (setsid() < 0) exit(1);
+
+    signal(SIGCHLD, signal_handler);
+    signal(SIGHUP, signal_handler);
+
+    pid = fork();
+    if (pid < 0) exit(1);
+    if (pid > 0) exit(0);
+
+    umask(0);
+    chdir("/");
+
+    openlog("tncattach", LOG_PID, LOG_DAEMON);
+}
+
 static struct argp argp = {options, parse_opt, args_doc, doc};
 int main(int argc, char **argv) {
 	struct arguments arguments;
@@ -398,6 +464,10 @@ int main(int argc, char **argv) {
 		fds[IF_FD_INDEX].events = POLLIN;
 		fds[TNC_FD_INDEX].fd = attached_tnc;
 		fds[TNC_FD_INDEX].events = POLLIN;
+		if (daemonize) {
+			become_daemon();
+			syslog(LOG_NOTICE, "tncattach daemon running");
+		}
 		read_loop();
 	}
 	
