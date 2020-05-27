@@ -17,7 +17,7 @@ git clone https://github.com/markqvist/tncattach.git
 cd tncattach
 
 # Make program
-make all
+make
 
 # Install to system
 sudo make install
