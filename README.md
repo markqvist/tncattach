@@ -37,7 +37,7 @@ Attach TNC devices as system network interfaces
   -i, --ipv4=IP_ADDRESS      Configure an IPv4 address on interface
   -m, --mtu=MTU              Specify interface MTU
   -n, --noipv6               Filter IPv6 traffic from reaching TNC
-      --noup                 Only create interface, don't bring it up
+      --noup                 Only create interface, don\'t bring it up
   -v, --verbose              Enable verbose output
   -?, --help                 Give this help list
       --usage                Give a short usage message
