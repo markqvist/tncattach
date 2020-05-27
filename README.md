@@ -81,4 +81,16 @@ sudo tncattach /dev/ttyUSB0 115200 --mtu 400 --noipv6 --noup
 
 # Configure IP addresses for point-to-point link
 sudo ifconfig tnc0 10.93.0.1 pointopoint 10.93.0.2
+
+# Check interface
+ifconfig
+
+tnc0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 400
+        inet 10.93.0.1  netmask 255.255.255.255  destination 10.93.0.2
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
 ```
