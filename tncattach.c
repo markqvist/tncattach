@@ -192,7 +192,7 @@ void read_loop(void) {
 	exit(1);
 }
 
-const char *argp_program_version = "tncattach 0.1.1";
+const char *argp_program_version = "tncattach 0.1.2";
 const char *argp_program_bug_address = "<mark@unsigned.io>";
 static char doc[] = "\r\nAttach TNC devices as system network interfaces\vAs an example, to attach the TNC connected to /dev/ttyUSB0 as a full ethernet device with an MTU of 576 bytes and assign an IPv4 address, use the following command:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 576 -e --ipv4 10.0.0.1/24\r\n\r\nTo create an interface that doesn't use ethernet, but transports IP directly, and filters IPv6 packets out, a command like the following can be used:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 --noipv6 --ipv4 10.0.0.1/24";
 static char args_doc[] = "port baudrate";
