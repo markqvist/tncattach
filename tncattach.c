@@ -5,6 +5,7 @@
 #include <argp.h>
 #include <syslog.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "Constants.h"
 #include "Serial.h"
 #include "KISS.h"
@@ -37,6 +38,10 @@ char* ipv4_addr;
 char* netmask;
 int mtu;
 int device_type = IF_TUN;
+
+char* id;
+int id_interval = -1;
+time_t last_id = 0;
 
 void cleanup(void) {
 	close_port(attached_tnc);
@@ -149,6 +154,33 @@ void read_loop(void) {
 							if (if_len > 0) {
 								if (if_len >= min_frame_size) {
 									if (!noipv6 || (noipv6 && !is_ipv6(if_buffer))) {
+										if (id_interval != -1) {
+											time_t now = time(NULL);
+											if (now == -1) {
+												if (daemonize) {
+													syslog(LOG_ERR, "Could not get system time, exiting now");
+												} else {
+													printf("Error: Could not get system time, exiting now\r\n");
+												}
+												cleanup();
+												exit(1);
+											} else {
+												if (now > last_id + id_interval) {
+													int id_len = strlen(id);
+													if (verbose) {
+														if (!daemonize) {
+															printf("Transmitting %d bytes of identification data on %s: %s\r\n", id_len, if_name, id);
+														}
+													}
+
+													uint8_t* id_frame = malloc(strlen(id));
+													memcpy(id_frame, id, id_len);
+													kiss_write_frame(attached_tnc, id_frame, id_len);
+													last_id = now;
+												}
+											}
+										}
+
 										kiss_write_frame(attached_tnc, if_buffer, if_len);
 									}
 								}
@@ -166,7 +198,6 @@ void read_loop(void) {
 						if (fdi == TNC_FD_INDEX) {
 							int tnc_len = read(attached_tnc, serial_buffer, sizeof(serial_buffer));
 							if (tnc_len > 0) {
-								if (verbose) printf("Data from TNC: %d bytes.\r\n", tnc_len);
 								for (int i = 0; i < tnc_len; i++) {
 									kiss_serial_read(serial_buffer[i]);
 								}
@@ -192,9 +223,9 @@ void read_loop(void) {
 	exit(1);
 }
 
-const char *argp_program_version = "tncattach 0.1.2";
+const char *argp_program_version = "tncattach 0.1.3";
 const char *argp_program_bug_address = "<mark@unsigned.io>";
-static char doc[] = "\r\nAttach TNC devices as system network interfaces\vAs an example, to attach the TNC connected to /dev/ttyUSB0 as a full ethernet device with an MTU of 576 bytes and assign an IPv4 address, use the following command:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 576 -e --ipv4 10.0.0.1/24\r\n\r\nTo create an interface that doesn't use ethernet, but transports IP directly, and filters IPv6 packets out, a command like the following can be used:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 --noipv6 --ipv4 10.0.0.1/24";
+static char doc[] = "\r\nAttach TNC devices as system network interfaces\vTo attach the TNC connected to /dev/ttyUSB0 as an ethernet device with an MTU of 512 bytes and assign an IPv4 address, while filtering IPv6 traffic, use:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 512 -e --noipv6 --ipv4 10.0.0.1/24\r\n\r\nStation identification can be performed automatically. Use the --id and --idinterval options. Identification beacons will be transmitted if the amount of time since the last identification is greater than the configured interval and there is any data to send. Channel capacity will therefore not be wasted on IDs for stations that are not actively transmitting.";
 static char args_doc[] = "port baudrate";
 static struct argp_option options[] = { 
 	{ "mtu", 'm', "MTU", 0, "Specify interface MTU"},
@@ -203,6 +234,8 @@ static struct argp_option options[] = {
     { "ipv4", 'i', "IP_ADDRESS", 0, "Configure an IPv4 address on interface"},
     { "noipv6", 'n', 0, 0, "Filter IPv6 traffic from reaching TNC"},
     { "noup", 1, 0, 0, "Only create interface, don't bring it up"},
+    { "interval", 't', "SECONDS", 0, "Maximum interval between station identifications"},
+    { "id", 's', "CALLSIGN", 0, "Station identification data"},
     { "verbose", 'v', 0, 0, "Enable verbose output"},
     { 0 } 
 };
@@ -211,6 +244,9 @@ static struct argp_option options[] = {
 struct arguments {
 	char *args[N_ARGS];
 	char *ipv4;
+	char *id;
+	bool valid_id;
+	int id_interval;
 	int baudrate;
 	int mtu;
 	bool tap;
@@ -239,6 +275,24 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 			if (arguments->mtu < MTU_MIN || arguments->mtu > MTU_MAX) {
 				printf("Error: Invalid MTU specified\r\n\r\n");
 				argp_usage(state);
+			}
+			break;
+
+		case 't':
+			arguments->id_interval = atoi(arg);
+			if (arguments->id_interval < 0) {
+				printf("Error: Invalid identification interval specified\r\n\r\n");
+				argp_usage(state);
+			}
+			break;
+
+		case 's':
+			arguments->id = arg;
+			if (strlen(arg) < 1 || strlen(arg) > arguments->mtu) {
+				printf("Error: Invalid identification string specified\r\n\r\n");
+				argp_usage(state);
+			} else {
+				arguments->valid_id = true;
 			}
 			break;
 
@@ -443,6 +497,8 @@ int main(int argc, char **argv) {
 	arguments.noipv6 = false;
 	arguments.daemon = false;
 	arguments.noup = false;
+	arguments.id_interval = -1;
+	arguments.valid_id = false;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 	arguments.baudrate = atoi(arguments.args[1]);
@@ -455,6 +511,22 @@ int main(int argc, char **argv) {
 	if (arguments.set_netmask) set_netmask = true;
 	if (arguments.noup) noup = true;
 	mtu = arguments.mtu;
+
+	if (arguments.id_interval >= 0) {
+		if (!arguments.valid_id) {
+			printf("Error: Periodic identification requested, but no valid indentification data specified\r\n");
+			cleanup();
+			exit(1);
+		} else {
+			id_interval = arguments.id_interval;
+			id = malloc(strlen(arguments.id));
+			strcpy(id, arguments.id);
+		}
+	} else if (arguments.valid_id && arguments.id_interval == -1) {
+		printf("Error: Periodic identification requested, but no indentification interval specified\r\n");
+		cleanup();
+		exit(1);
+	}
 
 	attached_if = open_tap();
 	attached_tnc = open_port(arguments.args[0]);

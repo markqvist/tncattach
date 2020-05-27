@@ -13,18 +13,21 @@ uint8_t frame_buffer[MAX_PAYLOAD];
 uint8_t write_buffer[MAX_PAYLOAD*2+3];
 
 extern bool verbose;
+extern bool daemonize;
 extern int attached_if;
+extern int device_type;
 extern void cleanup(void);
 
 void kiss_frame_received(int frame_len) {
-	if (verbose) printf("Got KISS frame\r\n");
-	int written = write(attached_if, frame_buffer, frame_len);
-	if (written == -1) {
-		if (verbose) printf("Could not write received KISS frame to network interface, is the interface up?\r\n");
-	} else if (written != frame_len) {
-		printf("Error: Could only write %d of %d bytes to interface", written, frame_len);
-		cleanup();
-		exit(1);
+	if ( (device_type == IF_TUN && frame_len >= TUN_MIN_FRAME_SIZE) || (device_type == IF_TAP && frame_len >= ETHERNET_MIN_FRAME_SIZE) )  {
+		int written = write(attached_if, frame_buffer, frame_len);
+		if (written == -1) {
+			if (verbose && !daemonize) printf("Could not write received KISS frame (%d bytes) to network interface, is the interface up?\r\n", frame_len);
+		} else if (written != frame_len) {
+			if (!daemonize) printf("Error: Could only write %d of %d bytes to interface", written, frame_len);
+			cleanup();
+			exit(1);
+		}
 	}
 }
 
