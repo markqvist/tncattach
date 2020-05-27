@@ -64,6 +64,7 @@ You can interact with the interface like any other using the __ip__ or __ifconfi
 ```sh
 # Check interface is running
 ifconfig
+
 tnc0: flags=579<UP,BROADCAST,RUNNING,ALLMULTI>  mtu 576
         inet 10.92.0.10  netmask 255.255.255.0  broadcast 10.92.0.255
         ether 02:56:ad:f2:40:33  txqueuelen 1000  (Ethernet)
