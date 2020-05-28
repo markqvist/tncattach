@@ -111,12 +111,13 @@ tnc0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 400
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 
 ```
-## Known Issues
+## Worth Knowing on Raspbian
 
-The utility fails to set the interface MTU on some Raspbian versions. After attaching the TNC, check that the correct MTU has been set on the interface with ifconfig or similar. If not, you can set it manually with a command like:
+On some versions of Raspbian (and probably other operating systems), the DHCP client daemon _dhcpcd_ interferes with TNC interfaces, by overriding their MTU and trying to auto-configure link-local addresses. You probably don't want this, and it can be disabled by editing the __/etc/dhcpcd.conf__ file, adding a statement telling _dhcpcd_ to ignore your TNC interface:
 
-```sh
-# Attach interface
-ifconfig tnc0 mtu 478
+```
+# Add the following statement somewhere at the beginning
+# of /etc/dhcpcd.conf to prevent dhcpcd from changing MTU
 
+denyinterfaces tnc0
 ```
