@@ -50,7 +50,7 @@ int open_tap(void) {
 				cleanup();
 				exit(1);
 			} else {
-				if (ioctl(inet, SIOCGIFFLAGS, &ifr) < 0) {
+				if (ioctl(inet, SIOCGIFMTU, &ifr) < 0) {
 					perror("Could not get interface flags from kernel");
 					close(inet);
 					cleanup();

@@ -111,3 +111,12 @@ tnc0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 400
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 
 ```
+## Known Issues
+
+The utility fails to set the interface MTU on some Raspbian versions. After attaching the TNC, check that the correct MTU has been set on the interface with ifconfig or similar. If not, you can set it manually with a command like:
+
+```sh
+# Attach interface
+ifconfig tnc0 mtu 478
+
+```
