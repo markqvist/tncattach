@@ -182,7 +182,7 @@ void read_loop(void) {
 										}
 
 										int tnc_written = kiss_write_frame(attached_tnc, if_buffer, if_len);
-										if (verbose && !daemonize) printf("Got %d bytes from interface, wrote %d bytes to TNC\r\n", if_len, tnc_written);
+										if (verbose && !daemonize) printf("Got %d bytes from interface, wrote %d bytes (KISS-framed and escaped) to TNC\r\n", if_len, tnc_written);
 									}
 								}
 							} else {
