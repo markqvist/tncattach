@@ -65,52 +65,59 @@ int open_tap(void) {
 					}
 
 					if (!noup) {
-						ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
-						if (ioctl(inet, SIOCSIFFLAGS, &ifr) < 0) {
-							perror("Could not bring up interface");
+						if (ioctl(inet, SIOCGIFFLAGS, &ifr) < 0) {
+							perror("Could not get interface flags from kernel");
 							close(inet);
 							cleanup();
 							exit(1);
 						} else {
-							if (set_ipv4) {
-								struct ifreq a_ifr;
-								struct sockaddr_in addr, snm;
+							ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+							if (ioctl(inet, SIOCSIFFLAGS, &ifr) < 0) {
+								perror("Could not bring up interface");
+								close(inet);
+								cleanup();
+								exit(1);
+							} else {
+								if (set_ipv4) {
+									struct ifreq a_ifr;
+									struct sockaddr_in addr, snm;
 
-								memset(&a_ifr, 0, sizeof(a_ifr));
-								memset(&addr, 0, sizeof(addr));
-								memset(&snm, 0, sizeof(addr));
-								strncpy(a_ifr.ifr_name, ifr.ifr_name, IFNAMSIZ);
-								addr.sin_family = AF_INET;
-								snm.sin_family = AF_INET;
+									memset(&a_ifr, 0, sizeof(a_ifr));
+									memset(&addr, 0, sizeof(addr));
+									memset(&snm, 0, sizeof(addr));
+									strncpy(a_ifr.ifr_name, ifr.ifr_name, IFNAMSIZ);
+									addr.sin_family = AF_INET;
+									snm.sin_family = AF_INET;
 
-								int addr_conversion = inet_pton(AF_INET, ipv4_addr, &(addr.sin_addr));
-								if (addr_conversion != 1) {
-									printf("Error: Invalid IPv4 address specified\r\n");
-									close(inet);
-									cleanup();
-									exit(1);
-								} else {
-									a_ifr.ifr_addr = *(struct sockaddr*)&addr;
-									if (ioctl(inet, SIOCSIFADDR, &a_ifr) < 0) {
-										perror("Could not set IP-address");
+									int addr_conversion = inet_pton(AF_INET, ipv4_addr, &(addr.sin_addr));
+									if (addr_conversion != 1) {
+										printf("Error: Invalid IPv4 address specified\r\n");
 										close(inet);
 										cleanup();
 										exit(1);
 									} else {
-										if (set_netmask) {
-											int snm_conversion = inet_pton(AF_INET, netmask, &(snm.sin_addr));
-											if (snm_conversion != 1) {
-												printf("Error: Invalid subnet mask specified\r\n");
-												close(inet);
-												cleanup();
-												exit(1);
-											} else {
-												a_ifr.ifr_addr = *(struct sockaddr*)&snm;
-												if (ioctl(inet, SIOCSIFNETMASK, &a_ifr) < 0) {
-													perror("Could not set subnet mask");
+										a_ifr.ifr_addr = *(struct sockaddr*)&addr;
+										if (ioctl(inet, SIOCSIFADDR, &a_ifr) < 0) {
+											perror("Could not set IP-address");
+											close(inet);
+											cleanup();
+											exit(1);
+										} else {
+											if (set_netmask) {
+												int snm_conversion = inet_pton(AF_INET, netmask, &(snm.sin_addr));
+												if (snm_conversion != 1) {
+													printf("Error: Invalid subnet mask specified\r\n");
 													close(inet);
 													cleanup();
 													exit(1);
+												} else {
+													a_ifr.ifr_addr = *(struct sockaddr*)&snm;
+													if (ioctl(inet, SIOCSIFNETMASK, &a_ifr) < 0) {
+														perror("Could not set subnet mask");
+														close(inet);
+														cleanup();
+														exit(1);
+													}
 												}
 											}
 										}

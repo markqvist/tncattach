@@ -223,7 +223,7 @@ void read_loop(void) {
 	exit(1);
 }
 
-const char *argp_program_version = "tncattach 0.1.3";
+const char *argp_program_version = "tncattach 0.1.4";
 const char *argp_program_bug_address = "<mark@unsigned.io>";
 static char doc[] = "\r\nAttach TNC devices as system network interfaces\vTo attach the TNC connected to /dev/ttyUSB0 as an ethernet device with an MTU of 512 bytes and assign an IPv4 address, while filtering IPv6 traffic, use:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 512 -e --noipv6 --ipv4 10.0.0.1/24\r\n\r\nStation identification can be performed automatically. Use the --id and --idinterval options. Identification beacons will be transmitted if the amount of time since the last identification is greater than the configured interval and there is any data to send. Channel capacity will therefore not be wasted on IDs for stations that are not actively transmitting.";
 static char args_doc[] = "port baudrate";
