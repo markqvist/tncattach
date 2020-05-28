@@ -6,7 +6,7 @@ Attach KISS TNC devices as network interfaces in Linux. This program allows you 
 
 Currently it is recommended to compile and install __tncattach__ from source with the below commands.
 
-If that is not possible for you, precompiled __amd64__ and __armhf__ (Raspberry Pi and similar) binaries have been provided in the releases section. You can [download the latest release here](https://github.com/markqvist/tncattach/releases/tag/0.1.3).
+If that is not possible for you, precompiled __amd64__ and __armhf__ (Raspberry Pi and similar) binaries have been provided in the releases section. You can [download the latest release here](https://github.com/markqvist/tncattach/releases).
 
 ```sh
 # If you don't already have a compiler installed
