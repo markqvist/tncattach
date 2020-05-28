@@ -98,6 +98,7 @@ void transmit_id(void) {
 	kiss_write_frame(attached_tnc, id_frame, id_len);
 	last_id = now;
 	tx_since_last_id = false;
+
 }
 
 bool should_id(void) {
@@ -144,11 +145,10 @@ void read_loop(void) {
 			if (poll_result == 0) {
 				// No resources are ready for reading,
 				// run scheduled tasks instead.
-				if (tx_since_last_id) {
+				if (id_interval != -1 && tx_since_last_id) {
 					time_t now = time_now();
 					if (now > last_id + id_interval) transmit_id();
 				}
-
 			} else {
 				for (int fdi = 0; fdi < N_FDS; fdi++) {
 					if (fds[fdi].revents != 0) {
@@ -251,7 +251,7 @@ void read_loop(void) {
 	exit(1);
 }
 
-const char *argp_program_version = "tncattach 0.1.5";
+const char *argp_program_version = "tncattach 0.1.6";
 const char *argp_program_bug_address = "<mark@unsigned.io>";
 static char doc[] = "\r\nAttach TNC devices as system network interfaces\vTo attach the TNC connected to /dev/ttyUSB0 as an ethernet device with an MTU of 512 bytes and assign an IPv4 address, while filtering IPv6 traffic, use:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 512 -e --noipv6 --ipv4 10.0.0.1/24\r\n\r\nStation identification can be performed automatically to comply with Part 97 rules. See the README for a complete description. Use the --id and --interval options, which should commonly be set to your callsign, and 600 seconds.";
 static char args_doc[] = "port baudrate";
