@@ -42,21 +42,11 @@ int device_type = IF_TUN;
 char* id;
 int id_interval = -1;
 time_t last_id = 0;
+bool tx_since_last_id = false;
 
 void cleanup(void) {
 	close_port(attached_tnc);
 	close_tap(attached_if);
-}
-
-void signal_handler(int signal) {
-	if (daemonize) {
-		cleanup();
-		syslog(LOG_NOTICE, "tncattach daemon exiting");
-		exit(0);
-	} else {
-		cleanup();
-		exit(0);
-	}
 }
 
 bool is_ipv6(uint8_t* frame) {
@@ -79,6 +69,56 @@ bool is_ipv6(uint8_t* frame) {
 	}
 }
 
+time_t time_now(void) {
+	time_t now = time(NULL);
+	if (now == -1) {
+		if (daemonize) {
+			syslog(LOG_ERR, "Could not get system time, exiting now");
+		} else {
+			printf("Error: Could not get system time, exiting now\r\n");
+		}
+		cleanup();
+		exit(1);
+	} else {
+		return now;
+	}
+}
+
+void transmit_id(void) {
+	time_t now = time(NULL);
+	int id_len = strlen(id);
+	if (verbose) {
+		if (!daemonize) {
+			printf("Transmitting %d bytes of identification data on %s: %s\r\n", id_len, if_name, id);
+		}
+	}
+
+	uint8_t* id_frame = malloc(strlen(id));
+	memcpy(id_frame, id, id_len);
+	kiss_write_frame(attached_tnc, id_frame, id_len);
+	last_id = now;
+	tx_since_last_id = false;
+}
+
+bool should_id(void) {
+	if (id_interval != -1) {
+		time_t now = time_now();
+		return now > last_id + id_interval;
+	} else {
+		return false;
+	}
+}
+
+void signal_handler(int signal) {
+	if (daemonize) syslog(LOG_NOTICE, "tncattach daemon exiting");
+
+	// Transmit final ID if necessary
+	if (id_interval != -1 && tx_since_last_id) transmit_id();
+
+	cleanup();
+	exit(0);
+}
+
 void read_loop(void) {
 	bool should_continue = true;
 	int min_frame_size;
@@ -97,120 +137,107 @@ void read_loop(void) {
 		exit(1);
 	}
 
+	int poll_timeout = 1000;
 	while (should_continue) {
-
-		int poll_result = poll(fds, 2, -1);
+		int poll_result = poll(fds, 2, poll_timeout);
 		if (poll_result != -1) {
-			for (int fdi = 0; fdi < N_FDS; fdi++) {
-				if (fds[fdi].revents != 0) {
-					// Check for hangup event
-					if (fds[fdi].revents & POLLHUP) {
-						if (fdi == IF_FD_INDEX) {
-							if (daemonize) {
-								syslog(LOG_ERR, "Received hangup from interface");
-							} else {
-								printf("Received hangup from interface\r\n");	
-							}
-							cleanup();
-							exit(1);
-						}
-						if (fdi == TNC_FD_INDEX) {
-							if (daemonize) {
-								syslog(LOG_ERR, "Received hangup from TNC");
-							} else {
-								printf("Received hangup from TNC\r\n");	
-							}
-							cleanup();
-							exit(1);
-						}
-					}
+			if (poll_result == 0) {
+				// No resources are ready for reading,
+				// run scheduled tasks instead.
+				if (tx_since_last_id) {
+					time_t now = time_now();
+					if (now > last_id + id_interval) transmit_id();
+				}
 
-					// Check for error event
-					if (fds[fdi].revents & POLLERR) {
-						if (fdi == IF_FD_INDEX) {
-							if (daemonize) {
-								syslog(LOG_ERR, "Received error event from interface");
-							} else {
-								perror("Received error event from interface\r\n");
+			} else {
+				for (int fdi = 0; fdi < N_FDS; fdi++) {
+					if (fds[fdi].revents != 0) {
+						// Check for hangup event
+						if (fds[fdi].revents & POLLHUP) {
+							if (fdi == IF_FD_INDEX) {
+								if (daemonize) {
+									syslog(LOG_ERR, "Received hangup from interface");
+								} else {
+									printf("Received hangup from interface\r\n");	
+								}
+								cleanup();
+								exit(1);
 							}
-							cleanup();
-							exit(1);
-						}
-						if (fdi == TNC_FD_INDEX) {
-							if (daemonize) {
-								syslog(LOG_ERR, "Received error event from TNC");
-							} else {
-								perror("Received error event from TNC\r\n");	
+							if (fdi == TNC_FD_INDEX) {
+								if (daemonize) {
+									syslog(LOG_ERR, "Received hangup from TNC");
+								} else {
+									printf("Received hangup from TNC\r\n");	
+								}
+								cleanup();
+								exit(1);
 							}
-							cleanup();
-							exit(1);
 						}
-					}
 
-					// If data is ready, read it
-					if (fds[fdi].revents & POLLIN) {
-						if (fdi == IF_FD_INDEX) {
-							int if_len = read(attached_if, if_buffer, sizeof(if_buffer));
-							if (if_len > 0) {
-								if (if_len >= min_frame_size) {
-									if (!noipv6 || (noipv6 && !is_ipv6(if_buffer))) {
-										if (id_interval != -1) {
-											time_t now = time(NULL);
-											if (now == -1) {
-												if (daemonize) {
-													syslog(LOG_ERR, "Could not get system time, exiting now");
-												} else {
-													printf("Error: Could not get system time, exiting now\r\n");
-												}
-												cleanup();
-												exit(1);
-											} else {
-												if (now > last_id + id_interval) {
-													int id_len = strlen(id);
-													if (verbose) {
-														if (!daemonize) {
-															printf("Transmitting %d bytes of identification data on %s: %s\r\n", id_len, if_name, id);
-														}
-													}
+						// Check for error event
+						if (fds[fdi].revents & POLLERR) {
+							if (fdi == IF_FD_INDEX) {
+								if (daemonize) {
+									syslog(LOG_ERR, "Received error event from interface");
+								} else {
+									perror("Received error event from interface\r\n");
+								}
+								cleanup();
+								exit(1);
+							}
+							if (fdi == TNC_FD_INDEX) {
+								if (daemonize) {
+									syslog(LOG_ERR, "Received error event from TNC");
+								} else {
+									perror("Received error event from TNC\r\n");	
+								}
+								cleanup();
+								exit(1);
+							}
+						}
 
-													uint8_t* id_frame = malloc(strlen(id));
-													memcpy(id_frame, id, id_len);
-													kiss_write_frame(attached_tnc, id_frame, id_len);
-													last_id = now;
-												}
-											}
+						// If data is ready, read it
+						if (fds[fdi].revents & POLLIN) {
+							if (fdi == IF_FD_INDEX) {
+								int if_len = read(attached_if, if_buffer, sizeof(if_buffer));
+								if (if_len > 0) {
+									if (if_len >= min_frame_size) {
+										if (!noipv6 || (noipv6 && !is_ipv6(if_buffer))) {
+
+											int tnc_written = kiss_write_frame(attached_tnc, if_buffer, if_len);
+											if (verbose && !daemonize) printf("Got %d bytes from interface, wrote %d bytes (KISS-framed and escaped) to TNC\r\n", if_len, tnc_written);
+											tx_since_last_id = true;
+
+											if (should_id()) transmit_id();
 										}
-
-										int tnc_written = kiss_write_frame(attached_tnc, if_buffer, if_len);
-										if (verbose && !daemonize) printf("Got %d bytes from interface, wrote %d bytes (KISS-framed and escaped) to TNC\r\n", if_len, tnc_written);
 									}
-								}
-							} else {
-								if (daemonize) {
-									syslog(LOG_ERR, "Could not read from network interface, exiting now");
 								} else {
-									printf("Error: Could not read from network interface, exiting now\r\n");	
+									if (daemonize) {
+										syslog(LOG_ERR, "Could not read from network interface, exiting now");
+									} else {
+										printf("Error: Could not read from network interface, exiting now\r\n");	
+									}
+									cleanup();
+									exit(1);
 								}
-								cleanup();
-								exit(1);
 							}
-						}
 
-						if (fdi == TNC_FD_INDEX) {
-							int tnc_len = read(attached_tnc, serial_buffer, sizeof(serial_buffer));
-							if (tnc_len > 0) {
-								for (int i = 0; i < tnc_len; i++) {
-									kiss_serial_read(serial_buffer[i]);
-								}
-							} else {
-								if (daemonize) {
-									syslog(LOG_ERR, "Could not read from TNC, exiting now");
+							if (fdi == TNC_FD_INDEX) {
+								int tnc_len = read(attached_tnc, serial_buffer, sizeof(serial_buffer));
+								if (tnc_len > 0) {
+									for (int i = 0; i < tnc_len; i++) {
+										kiss_serial_read(serial_buffer[i]);
+									}
 								} else {
-									printf("Error: Could not read from TNC, exiting now\r\n");
+									if (daemonize) {
+										syslog(LOG_ERR, "Could not read from TNC, exiting now");
+									} else {
+										printf("Error: Could not read from TNC, exiting now\r\n");
+									}
+									
+									cleanup();
+									exit(1);
 								}
-								
-								cleanup();
-								exit(1);
 							}
 						}
 					}
@@ -224,9 +251,9 @@ void read_loop(void) {
 	exit(1);
 }
 
-const char *argp_program_version = "tncattach 0.1.4";
+const char *argp_program_version = "tncattach 0.1.5";
 const char *argp_program_bug_address = "<mark@unsigned.io>";
-static char doc[] = "\r\nAttach TNC devices as system network interfaces\vTo attach the TNC connected to /dev/ttyUSB0 as an ethernet device with an MTU of 512 bytes and assign an IPv4 address, while filtering IPv6 traffic, use:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 512 -e --noipv6 --ipv4 10.0.0.1/24\r\n\r\nStation identification can be performed automatically. Use the --id and --idinterval options. Identification beacons will be transmitted if the amount of time since the last identification is greater than the configured interval and there is any data to send. Channel capacity will therefore not be wasted on IDs for stations that are not actively transmitting.";
+static char doc[] = "\r\nAttach TNC devices as system network interfaces\vTo attach the TNC connected to /dev/ttyUSB0 as an ethernet device with an MTU of 512 bytes and assign an IPv4 address, while filtering IPv6 traffic, use:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 512 -e --noipv6 --ipv4 10.0.0.1/24\r\n\r\nStation identification can be performed automatically to comply with Part 97 rules. See the README for a complete description. Use the --id and --interval options, which should commonly be set to your callsign, and 600 seconds.";
 static char args_doc[] = "port baudrate";
 static struct argp_option options[] = { 
 	{ "mtu", 'm', "MTU", 0, "Specify interface MTU"},

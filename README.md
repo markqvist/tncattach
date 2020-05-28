@@ -54,7 +54,17 @@ Additionally, it is worth noting that __tncattach__ can filter out IPv6 packets 
 
 If you intend to use __tncattach__ on a system with mDNS services enabled (avahi-daemon, for example), you may want to consider modifying your mDNS setup to exclude TNC interfaces, or turning it off entirely, since it will generate a lot of traffic that might be unwanted.
 
-You can configure tncattach to automatically transmit station identification according to a given interval, by using the --id and --interval options. Identification will be transmitted as raw data frames with whatever content has been specified in the --id option. Useful for amateur radio use, or other areas where station identification is necessary. Identification beacons will be transmitted if the amount of time since the last identification is greater than the configured interval and there is any data to send. Channel capacity will therefore not be wasted on IDs for stations that are not actively transmitting.
+## Station Identification
+
+You can configure tncattach to automatically transmit station identification beacons according to a given interval, by using the --id and --interval options. Identification will be transmitted as raw data frames with whatever content has been specified in the --id option. Useful for amateur radio use, or other areas where station identification is necessary.
+
+Identification beacons will be transmitted when:
+
+ - There is outgoing data to send, and the specified interval has elapsed.
+ - The specified interval elapses, and data has been sent since the last ID beacon.
+ - The program exits, if any data frames have been transmitted since the last ID beacon.
+
+The above methodology should comply with station identification rules for amateur radio in most parts of the world, and complies with US Part 97 rules.
 
 ## Examples
 
