@@ -181,7 +181,8 @@ void read_loop(void) {
 											}
 										}
 
-										kiss_write_frame(attached_tnc, if_buffer, if_len);
+										int tnc_written = kiss_write_frame(attached_tnc, if_buffer, if_len);
+										if (verbose && !daemonize) printf("Got %d bytes from interface, wrote %d bytes to TNC\r\n", if_len, tnc_written);
 									}
 								}
 							} else {

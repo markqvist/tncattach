@@ -28,6 +28,7 @@ void kiss_frame_received(int frame_len) {
 			cleanup();
 			exit(1);
 		}
+		if (verbose && !daemonize) printf("Got %d bytes from TNC, wrote %d bytes to interface\r\n", frame_len, written);
 	}
 }
 
