@@ -9,3 +9,7 @@
 #define MTU_DEFAULT 329
 
 #define TXQUEUELEN 10
+
+// ARP timings, in seconds
+#define ARP_BASE_REACHABLE_TIME 300
+#define ARP_RETRANS_TIME 5

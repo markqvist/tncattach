@@ -80,6 +80,49 @@ int open_tap(void) {
 						}
 					}
 
+					// Configure ARP characteristics
+					char path_buf[256];
+					if (device_type == IF_TAP) {
+						snprintf(path_buf, sizeof(path_buf), "/proc/sys/net/ipv4/neigh/%s/base_reachable_time_ms", ifr.ifr_name);
+						int arp_fd = open(path_buf, O_WRONLY);
+						if (arp_fd < 0) {
+							perror("Could not open proc entry for ARP parameters");
+							close(inet);
+							cleanup();
+							exit(1);
+						} else {
+							if (dprintf(arp_fd, "%d", ARP_BASE_REACHABLE_TIME*1000) <= 0) {
+								perror("Could not configure interface ARP parameter base_reachable_time_ms");
+								close(inet);
+								close(arp_fd);
+								cleanup();
+								exit(1);
+							} else {
+								close(arp_fd);
+							}
+						}
+
+						snprintf(path_buf, sizeof(path_buf), "/proc/sys/net/ipv4/neigh/%s/retrans_time_ms", ifr.ifr_name);
+						arp_fd = open(path_buf, O_WRONLY);
+						if (arp_fd < 0) {
+							perror("Could not open proc entry for ARP parameters");
+							close(inet);
+							cleanup();
+							exit(1);
+						} else {
+							if (dprintf(arp_fd, "%d", ARP_RETRANS_TIME*1000) <= 0) {
+								perror("Could not configure interface ARP parameter retrans_time_ms");
+								close(inet);
+								close(arp_fd);
+								cleanup();
+								exit(1);
+							} else {
+								close(arp_fd);
+							}
+						}
+					}
+
+					// Bring up if requested
 					if (!noup) {
 						if (ioctl(inet, SIOCGIFFLAGS, &ifr) < 0) {
 							perror("Could not get interface flags from kernel");
