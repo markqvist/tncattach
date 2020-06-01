@@ -64,6 +64,22 @@ int open_tap(void) {
 						exit(1);
 					}
 
+					// Configure TX queue length
+					if (ioctl(inet, SIOCGIFTXQLEN, &ifr) < 0) {
+						perror("Could not get interface flags from kernel");
+						close(inet);
+						cleanup();
+						exit(1);
+					} else {
+						ifr.ifr_qlen = TXQUEUELEN;
+						if (ioctl(inet, SIOCSIFTXQLEN, &ifr) < 0) {
+							perror("Could not set interface TX queue length");
+							close(inet);
+							cleanup();
+							exit(1);
+						}
+					}
+
 					if (!noup) {
 						if (ioctl(inet, SIOCGIFFLAGS, &ifr) < 0) {
 							perror("Could not get interface flags from kernel");
