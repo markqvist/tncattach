@@ -33,5 +33,5 @@ int open_tcp(char* ip, int port) {
 }
 
 int close_tcp(int fd) {
-	return close(fd);
+    return close(fd);
 }
