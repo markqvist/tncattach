@@ -46,7 +46,7 @@ int open_tap(void) {
 			
 			int inet = socket(AF_INET, SOCK_DGRAM, 0);
 			if (inet == -1) {
-				perror("Could not open AF_INET socket\r\n");
+				perror("Could not open AF_INET socket");
 				cleanup();
 				exit(1);
 			} else {
