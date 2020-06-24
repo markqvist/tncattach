@@ -2,6 +2,9 @@ TNC Attach
 ==========
 Attach KISS TNC devices as network interfaces in Linux. This program allows you to attach TNCs or any KISS-compatible device as a network interface. This program does not need any kernel modules, and has no external dependencies outside the standard Linux and GNU C libraries.
 
+## Version edited
+Add capability of using TCP Kiss.
+
 ## Installation
 
 Currently it is recommended to compile and install __tncattach__ from source with the below commands.
@@ -30,10 +33,11 @@ sudo make install
 Using __tncattach__ is simple. Run the program from the command line, specifying which serial port the TNC is connected to, and the serial port baud-rate, and __tncattach__ takes care of the rest. In most cases, depending on what you intend to do, you probably want to use some of the options, though. See the examples section below for usage examples.
 
 ```
-Usage: tncattach [OPTION...] port baudrate
+Usage: tncattach [OPTION...] (serial_port|host) (baudrate|port)
 
 Attach TNC devices as system network interfaces
 
+  -o, --kisstcp              Use TCP Kiss (such as Direwolf port 8001)
   -d, --daemon               Run tncattach as a daemon
   -e, --ethernet             Create a full ethernet device
   -i, --ipv4=IP_ADDRESS      Configure an IPv4 address on interface
@@ -73,6 +77,7 @@ Create an ethernet device with a USB-connected TNC, set the MTU, filter IPv6 tra
 ```sh
 # Attach interface
 sudo tncattach /dev/ttyUSB0 115200 --ethernet --mtu 576 --noipv6 --ipv4 10.92.0.10/24
+sudo tncattach localhost 8001 -o --ethernet --mtu 576 --noipv6 --ipv4 10.92.0.10/24
 ```
 
 You can interact with the interface like any other using the __ip__ or __ifconfig__ utilities:
@@ -95,6 +100,7 @@ Create a point-to-point link:
 ```sh
 # Attach interface
 sudo tncattach /dev/ttyUSB0 115200 --mtu 400 --noipv6 --noup
+sudo tncattach localhost 8001 -o --mtu 400 --noipv6 --noup
 
 # Configure IP addresses for point-to-point link
 sudo ifconfig tnc0 10.93.0.1 pointopoint 10.93.0.2

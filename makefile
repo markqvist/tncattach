@@ -14,7 +14,7 @@ clean:
 tncattach:
 	@echo "Making tncattach..."
 	@echo "Compiling with: ${compiler}"
-	${compiler} ${flags} tncattach.c Serial.c KISS.c TAP.c -o tncattach -Wall
+	${compiler} ${flags} tncattach.c Serial.c Tcp.c KISS.c TAP.c -o tncattach -Wall
 
 install:
 	@echo "Installing tncattach..."
