@@ -2,7 +2,7 @@
 .PHONY: all clean install uninstall tncattach
 
 compiler = gcc
-flags = -std=gnu11 -lm
+flags = -std=gnu11 -static-libgcc
 
 all: tncattach
 rebuild: clean all
