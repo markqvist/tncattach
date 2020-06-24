@@ -11,6 +11,8 @@ int open_tcp(char* ip, int port) {
     struct hostent *server;
     struct sockaddr_in serv_addr;
 
+    server = gethostbyname(ip);
+
     if (server == NULL) {
         perror("Error resolving host");
         exit(1);
