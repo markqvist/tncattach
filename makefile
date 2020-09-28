@@ -18,11 +18,14 @@ tncattach:
 
 install:
 	@echo "Installing tncattach..."
-	chmod a+x tncattach
+	@chmod a+x tncattach
 	cp ./tncattach /usr/local/sbin/
-	mkdir -p /usr/local/man/man8
-	install -m 644 -o root -g root tncattach.8 /usr/local/man/man8/tncattach.8
-	mandb -f /usr/local/man/man8/tncattach.8
+	@echo "Installing man page..."
+	@mkdir -p /usr/local/man/man8
+	@install -m 644 -o root -g root tncattach.8 /usr/local/man/man8/tncattach.8
+	@echo "Updating mandb..."
+	@mandb -f /usr/local/man/man8/tncattach.8 2> /dev/null 1> /dev/null
+	@echo "Done"
 
 uninstall:
 	@echo "Uninstalling tncattach"
