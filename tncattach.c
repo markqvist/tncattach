@@ -564,6 +564,7 @@ int main(int argc, char **argv) {
     arguments.noup = false;
     arguments.id_interval = -1;
     arguments.valid_id = false;
+    arguments.kiss_over_tcp = false;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
