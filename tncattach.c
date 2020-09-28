@@ -261,7 +261,7 @@ void read_loop(void) {
     exit(1);
 }
 
-const char *argp_program_version = "tncattach 0.1.8";
+const char *argp_program_version = "tncattach 0.1.9";
 const char *argp_program_bug_address = "<mark@unsigned.io>";
 static char doc[] = "\r\nAttach TNC devices as system network interfaces\vTo attach the TNC connected to /dev/ttyUSB0 as an ethernet device with an MTU of 512 bytes and assign an IPv4 address, while filtering IPv6 traffic, use:\r\n\r\n\ttncattach /dev/ttyUSB0 115200 -m 512 -e --noipv6 --ipv4 10.0.0.1/24\r\n\r\nStation identification can be performed automatically to comply with Part 97 rules. See the README for a complete description. Use the --id and --interval options, which should commonly be set to your callsign, and 600 seconds.";
 static char args_doc[] = "port baudrate";
