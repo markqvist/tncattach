@@ -20,7 +20,9 @@ install:
 	@echo "Installing tncattach..."
 	chmod a+x tncattach
 	cp ./tncattach /usr/local/sbin/
+	install -m 644 -o root -g root tncattach.8 /usr/local/man/man8
 
 uninstall:
 	@echo "Uninstalling tncattach"
 	rm /usr/local/sbin/tncattach
+	rm /usr/local/man/man8/tncattach.8
