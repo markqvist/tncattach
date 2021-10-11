@@ -134,3 +134,10 @@ On some versions of Raspbian (and probably other operating systems), the DHCP cl
 
 denyinterfaces tnc0
 ```
+
+## Support tncattach development
+You can help support the continued development of open, free and private communications systems by donating via one of the following channels:
+
+- Ethereum: 0x81F7B979fEa6134bA9FD5c701b3501A2e61E897a
+- Bitcoin: 3CPmacGm34qYvR6XWLVEJmi2aNe3PZqUuq
+- Ko-Fi: https://ko-fi.com/markqvist
