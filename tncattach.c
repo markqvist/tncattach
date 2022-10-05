@@ -150,7 +150,7 @@ void read_loop(void) {
 
     int poll_timeout = 1000;
     while (should_continue) {
-        int poll_result = poll(fds, 2, poll_timeout);
+        int poll_result = poll(fds, N_FDS, poll_timeout);
         if (poll_result != -1) {
             if (poll_result == 0) {
                 // No resources are ready for reading,
@@ -232,7 +232,7 @@ void read_loop(void) {
                                 }
                             }
 
-                            if (fdi == TNC_FD_INDEX) {
+                            else if (fdi == TNC_FD_INDEX) {
                                 int tnc_len = read(attached_tnc, serial_buffer, sizeof(serial_buffer));
                                 if (tnc_len > 0) {
                                     for (int i = 0; i < tnc_len; i++) {
@@ -579,7 +579,7 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
-    
+
     if (arguments.daemon) daemonize = true;
     if (arguments.verbose) verbose = true;
     if (arguments.tap) device_type = IF_TAP;
@@ -623,7 +623,7 @@ int main(int argc, char **argv) {
     fds[IF_FD_INDEX].events = POLLIN;
     fds[TNC_FD_INDEX].fd = attached_tnc;
     fds[TNC_FD_INDEX].events = POLLIN;
-    
+
     if (daemonize) {
         become_daemon();
         syslog(LOG_NOTICE, "tncattach daemon running");
