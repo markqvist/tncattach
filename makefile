@@ -1,33 +1,35 @@
 .DEFAULT_GOAL := all
 .PHONY: all clean install uninstall tncattach
 
-compiler = gcc
-flags = -Wall -std=gnu11 -static-libgcc
+RM ?= rm
+INSTALL ?= install
+CC ?= gcc
+CFLAGS ?= -Wall -std=gnu11 -static-libgcc
+LDFLAGS ?= 
+PREFIX ?= /usr/local
 
 all: tncattach
 rebuild: clean all
 
 clean:
 	@echo "Cleaning tncattach build..."
-	@rm -f tncattach
+	$(RM) -f tncattach
 
 tncattach:
 	@echo "Making tncattach..."
-	@echo "Compiling with: ${compiler}"
-	${compiler} ${flags} tncattach.c Serial.c TCP.c KISS.c TAP.c -o tncattach -Wall
+	@echo "Compiling with: $(CC)"
+	$(CC) $(CFLAGS) $(LDFLAGS) tncattach.c Serial.c TCP.c KISS.c TAP.c -o tncattach
 
 install:
 	@echo "Installing tncattach..."
-	@chmod a+x tncattach
-	cp ./tncattach /usr/local/sbin/
+	$(INSTALL) -d $(DESTDIR)/$(PREFIX)/bin
+	$(INSTALL) -Dm755 tncattach $(DESTDIR)/$(PREFIX)/bin/tncattach
 	@echo "Installing man page..."
-	@mkdir -p /usr/local/man/man8
-	@install -m 644 -o root -g root tncattach.8 /usr/local/man/man8/tncattach.8
-	@echo "Updating mandb..."
-	@mandb -f /usr/local/man/man8/tncattach.8 2> /dev/null 1> /dev/null
-	@echo "Done"
+	gzip -9 tncattach.8
+	$(INSTALL) -d $(DESTDIR)/$(PREFIX)/share/man/man8
+	$(INSTALL) -Dm644 tncattach.8.gz $(DESTDIR)/$(PREFIX)/share/man/man8/tncattach.8.gz
 
 uninstall:
 	@echo "Uninstalling tncattach"
-	rm /usr/local/sbin/tncattach
-	rm /usr/local/man/man8/tncattach.8
+	$(RM) $(DESTDIR)/$(PREFIX)/bin/tncattach
+	$(RM) $(DESTDIR)/$(PREFIX)/share/man/man8/tncattach.8.gz
