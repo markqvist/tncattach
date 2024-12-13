@@ -34,10 +34,14 @@ bool noipv6 = false;
 bool noup = false;
 bool daemonize = false;
 bool set_ipv4 = false;
+bool set_ipv6 = false;
 bool set_netmask = false;
 bool kiss_over_tcp = false;
 char* ipv4_addr;
 char* netmask;
+
+char* ipv6_addr;
+char* netmask_v6;
 
 char* tcp_host;
 int tcp_port;
@@ -269,15 +273,16 @@ static struct argp_option options[] = {
     { "mtu", 'm', "MTU", 0, "Specify interface MTU", 1},
     { "ethernet", 'e', 0, 0, "Create a full ethernet device", 2},
     { "ipv4", 'i', "IP_ADDRESS", 0, "Configure an IPv4 address on interface", 3},
-    { "noipv6", 'n', 0, 0, "Filter IPv6 traffic from reaching TNC", 4},
-    { "noup", 1, 0, 0, "Only create interface, don't bring it up", 5},
-    { "kisstcp", 'T', 0, 0, "Use KISS over TCP instead of serial port", 6},
-    { "tcphost", 'H', "TCP_HOST", 0, "Host to connect to when using KISS over TCP", 7},
-    { "tcpport", 'P', "TCP_PORT", 0, "TCP port when using KISS over TCP", 8},
-    { "interval", 't', "SECONDS", 0, "Maximum interval between station identifications", 9},
-    { "id", 's', "CALLSIGN", 0, "Station identification data", 10},
-    { "daemon", 'd', 0, 0, "Run tncattach as a daemon", 11},
-    { "verbose", 'v', 0, 0, "Enable verbose output", 12},
+    { "ipv6", '6', "IP6_ADDRESS", 0, "Configure an IPv6 address on interface", 4},
+    { "noipv6", 'n', 0, 0, "Filter IPv6 traffic from reaching TNC", 5},
+    { "noup", 1, 0, 0, "Only create interface, don't bring it up", 6},
+    { "kisstcp", 'T', 0, 0, "Use KISS over TCP instead of serial port", 7},
+    { "tcphost", 'H', "TCP_HOST", 0, "Host to connect to when using KISS over TCP", 8},
+    { "tcpport", 'P', "TCP_PORT", 0, "TCP port when using KISS over TCP", 9},
+    { "interval", 't', "SECONDS", 0, "Maximum interval between station identifications", 10},
+    { "id", 's', "CALLSIGN", 0, "Station identification data", 11},
+    { "daemon", 'd', 0, 0, "Run tncattach as a daemon", 12},
+    { "verbose", 'v', 0, 0, "Enable verbose output", 13},
     { 0 }
 };
 
@@ -285,6 +290,7 @@ static struct argp_option options[] = {
 struct arguments {
     char *args[N_ARGS];
     char *ipv4;
+    char *ipv6;
     char *id;
     bool valid_id;
     int id_interval;
@@ -296,6 +302,8 @@ struct arguments {
     bool verbose;
     bool set_ipv4;
     bool set_netmask;
+    bool set_ipv6;
+    bool set_netmask_v6;
     bool noipv6;
     bool noup;
     bool kiss_over_tcp;
@@ -466,9 +474,28 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             }
 
             break;
+        case '6':
+            if(arguments->noipv6)
+            {
+                perror("Sorry, but you had noipv6 set yet want to use ipv6?\n");
+                exit(EXIT_FAILURE);
+            }
+            arguments->ipv6 = arg;
+            arguments->set_ipv6 = true;
 
+            // Save to the global for other modules to access it
+            ipv6_addr = malloc(strlen(arguments->ipv6)+1);
+            strcpy(ipv6_addr, arguments->ipv6);
+            printf("v6 now: %s\n", ipv6_addr);
+            break;
+						
         case 'n':
             arguments->noipv6 = true;
+            if(arguments->set_ipv6)
+            {
+                printf("Requested no IPv6 yet you have set the IPv6 to '%s'\n", arguments->ipv6);
+                exit(1);
+            }
             break;
 
         case 'd':
@@ -559,6 +586,8 @@ int main(int argc, char **argv) {
     arguments.verbose = false;
     arguments.set_ipv4 = false;
     arguments.set_netmask = false;
+    arguments.set_ipv6 = false;
+    arguments.set_netmask_v6 = false;
     arguments.noipv6 = false;
     arguments.daemon = false;
     arguments.noup = false;
@@ -586,6 +615,7 @@ int main(int argc, char **argv) {
     if (arguments.noipv6) noipv6 = true;
     if (arguments.set_ipv4) set_ipv4 = true;
     if (arguments.set_netmask) set_netmask = true;
+    if (arguments.set_ipv6) set_ipv6 = true;
     if (arguments.noup) noup = true;
     mtu = arguments.mtu;
 
