@@ -1,18 +1,159 @@
 #include "TAP.h"
 
+// Needed for in6_ifreq
+// #include <cstdio>
+// #include <cstdlib>
+#include <linux/ipv6.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+
 char tap_name[IFNAMSIZ];
 
 extern bool verbose;
 extern bool noipv6;
 extern bool set_ipv4;
+extern bool set_ipv6;
 extern bool set_netmask;
 extern bool noup;
 extern int mtu;
 extern int device_type;
 extern char if_name[IFNAMSIZ];
 extern char* ipv4_addr;
+extern char* ipv6_addr;
 extern char* netmask;
 extern void cleanup();
+
+// TODO: Allow optional-arg for case where we must also generate the hwaddr
+// (this would be the case whereby we are running without `--ethernet`)
+struct in6_addr generateLinkLocal(char* interfaceName)
+{
+    struct in6_addr ll_a;
+    memset(&ll_a, 0, sizeof(struct in6_addr));
+    ll_a.s6_addr[0] = 0xfe;
+    ll_a.s6_addr[1] = 0x80;
+
+    // TODO: Set the rest here
+
+    // TODO: Loop till we generate an address NOT in use
+    // (TODO, should not matter, link-local is interface scoped)
+    // TODO: Should tie it to mac address because of uniqueness
+    // on the lan it shall attach to (over lora)
+
+    int dummySock = socket(AF_PACKET, SOCK_PACKET, 0);
+    if(dummySock < 0)
+    {
+        printf("Failed to open configuration socket in order to generate link-local address\n");
+        exit(1);
+    }
+
+    struct ifreq reqParams;
+    memset(&reqParams, 0, sizeof(reqParams));
+    strcpy(reqParams.ifr_name, interfaceName);
+
+    if(ioctl(dummySock, SIOCGIFHWADDR, &reqParams) < 0)
+    {
+        printf("Failed to fetch hardware address Failed to open configuration socket in order to generate link-local address\n");
+        exit(1);
+    }
+
+    return ll_a;
+}
+
+void trySixSet2(struct ifreq original, struct in6_addr address, int prefixLen)
+{
+	printf("Strat 2, running...\n");
+	
+
+	struct ifreq reqParam;
+	memset(&reqParam, 0, sizeof(struct ifreq));
+	strcpy(reqParam.ifr_name, original.ifr_name);
+	printf("interface name: (1) %s\n", reqParam.ifr_name);
+
+
+	int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
+	ioctl(dummySock, SIOCGIFINDEX, &reqParam);
+	printf("index: %d\n", reqParam.ifr_ifindex);
+	printf("interface name: (2) %s\n", reqParam.ifr_name);
+
+	struct sockaddr_in6 _6addr;
+	memset(&_6addr, 0, sizeof(struct sockaddr_in6));
+	_6addr.sin6_family = AF_INET6;
+	_6addr.sin6_addr = address;
+	struct sockaddr_in6* _6addrPtr = &_6addr;
+	reqParam.ifr_addr = *(struct sockaddr*)_6addrPtr;
+
+	// struct in6_ifreq _6reqParam;
+	// _6reqParam.ifr6_ifindex = reqParam.ifr_ifindex;
+	// _6reqParam.ifr6_prefixlen = prefixLen;
+	// _6reqParam.ifr6_addr = address;
+	
+	
+	printf("status after set: %d\n", ioctl(dummySock, SIOCSIFADDR, &_6addr));
+	printf("interface name: (3) %s\n", reqParam.ifr_name);
+
+// while(true){
+	ioctl(dummySock, SIOCGIFFLAGS, &reqParam);
+	printf("is Up?: %d\n", reqParam.ifr_flags&IFF_UP);
+	// }
+	
+
+	close(dummySock);
+
+	
+	exit(1);
+}
+
+#include <arpa/inet.h>
+
+void trySixSet
+(
+    int interfaceIndex,
+    struct in6_addr address,
+    int prefixLen
+)
+{
+    printf("Strat 1, setting...\n");
+
+    char ip_str[INET6_ADDRSTRLEN+1];
+    inet_ntop(AF_INET6, &address, ip_str, INET6_ADDRSTRLEN+1);
+
+	printf
+    (
+        "Adding IPv6 address of '%s/%d' to interface at if_index %d\n",
+        ip_str,
+        prefixLen,
+        interfaceIndex
+    );
+
+	int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
+
+
+
+	
+	struct in6_ifreq paramReq;
+	memset(&paramReq, 0, sizeof(struct in6_ifreq));
+	paramReq.ifr6_ifindex = interfaceIndex;
+ 	printf("paramReq.ifr6_ifindex: %d\n", paramReq.ifr6_ifindex);
+ 	paramReq.ifr6_prefixlen = prefixLen;
+ 	paramReq.ifr6_addr = address;
+
+	
+
+	if(ioctl(dummySock, SIOCSIFADDR, &paramReq) < 0)
+	{
+ 		// perror("Fokop");
+ 		printf("Fokop\n");
+ 		cleanup();
+ 		close(dummySock);
+ 		exit(1);
+ 	}
+
+    printf("Sucessfully applied IPv6 configuration");
+	close(dummySock);
+}
+
+#include<string.h>
 
 int open_tap(void) {
     struct ifreq ifr;
@@ -43,10 +184,19 @@ int open_tap(void) {
             exit(1);
         } else {
             strcpy(if_name, ifr.ifr_name);
+
             
-            int inet = socket(AF_INET, SOCK_DGRAM, 0);
+            int inet = socket(set_ipv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);
+            printf("inet fd: %d\n", inet);
+            printf("tun/tap handle fd: %d\n", fd);
+						printf("set_ipv4: %d\n", set_ipv4);
+						printf("set_ipv6: %d\n", set_ipv6);
+            
+            // inet=fd;
             if (inet == -1) {
-                perror("Could not open AF_INET socket");
+            	  char err[100];
+            		sprintf(err, "Could not open %s socket", set_ipv4 ? "AF_INET" : "AF_INET6");
+                perror(err);
                 cleanup();
                 exit(1);
             } else {
@@ -181,6 +331,64 @@ int open_tap(void) {
                                             }
                                         }
                                     }
+                                }
+
+                                if(set_ipv6) {
+                                	printf("TODO: Implement set ipv6\n");
+
+                                    // Firstly, obtain the interface index by `ifr_name`
+                                    int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
+                                    if(ioctl(dummySock, SIOCGIFINDEX, &ifr) < 0)
+                                    {
+                                        printf("Could not get interface index for interface '%s'\n", ifr.ifr_name);
+                                        close(dummySock);
+                                        exit(1);
+                                    }					
+
+                                    
+                                    char* ipPart = strtok(ipv6_addr, "/");
+                                    char* prefixPart_s = strtok(NULL, "/");
+                                    printf("ip part: %s\n", ipPart);
+
+                                    if(!prefixPart_s)
+                                    {
+                                        perror("No prefix length was provided"); // TODO: Move logic into arg parsing
+                                        close(dummySock);
+                                        exit(1);
+                                    }
+                                    printf("prefix part: %s\n", prefixPart_s);
+
+                                    long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
+
+
+
+                                    // Convert ASCII IPv6 address to ABI structure
+                                    struct in6_addr six_addr_itself;
+                                    memset(&six_addr_itself, 0, sizeof(struct in6_addr));
+                                    if(inet_pton(AF_INET6, ipv6_addr, &six_addr_itself) < 0)
+                                    {
+                                        printf("Error parsing IPv6 address '%s'", ipv6_addr);
+                                        close(dummySock);
+                                        exit(1);
+                                    }
+
+
+                                    // printf("Using prefix length of '%d'\n", netmask);
+
+                                    // TODO: Add user's requested address
+                                    trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
+                                    
+                                    trySixSet(ifr.ifr_ifindex, generateLinkLocal(ifr.ifr_ifindex), 64);
+                                    // six_addr_itself.s6_addr[0] = 0xfe;
+                                    // six_addr_itself.s6_addr[1] = 0x80;
+                                    // six_addr_itself.s6_addr[15] = 1;
+
+                                    
+
+                                    // TODO: 
+                                    // FIXME: Allow the ipv6 to be empty and just do link-local
+
+                                    printf("IPv6 settings SHOULD be done now\n");
                                 }
                             }
                         }
