@@ -43,6 +43,7 @@ struct in6_addr generateLinkLocal(char* interfaceName)
     if(dummySock < 0)
     {
         printf("Failed to open configuration socket in order to generate link-local address\n");
+        close(dummySock);
         exit(1);
     }
 
@@ -53,6 +54,7 @@ struct in6_addr generateLinkLocal(char* interfaceName)
     if(ioctl(dummySock, SIOCGIFHWADDR, &reqParams) < 0)
     {
         printf("Failed to fetch hardware address Failed to open configuration socket in order to generate link-local address\n");
+        close(dummySock);
         exit(1);
     }
 
@@ -66,8 +68,6 @@ void trySixSet
     int prefixLen
 )
 {
-    printf("Strat 1, setting...\n");
-
     char ip_str[INET6_ADDRSTRLEN+1];
     inet_ntop(AF_INET6, &address, ip_str, INET6_ADDRSTRLEN+1);
 
@@ -325,20 +325,12 @@ int open_tap(void) {
                                         exit(1);
                                     }
 
+                                    // Add link-local address
+                                    trySixSet(ifr.ifr_ifindex, generateLinkLocal(if_name), 64);
 
-                                    // printf("Using prefix length of '%d'\n", netmask);
-
-                                    // TODO: Add user's requested address
+                                    // Add user's requested address
                                     trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
-                                    
-                                    trySixSet(ifr.ifr_ifindex, generateLinkLocal(ifr.ifr_ifindex), 64);
-                                    // six_addr_itself.s6_addr[0] = 0xfe;
-                                    // six_addr_itself.s6_addr[1] = 0x80;
-                                    // six_addr_itself.s6_addr[15] = 1;
 
-                                    
-
-                                    // TODO: 
                                     // FIXME: Allow the ipv6 to be empty and just do link-local
 
                                     printf("IPv6 settings SHOULD be done now\n");
