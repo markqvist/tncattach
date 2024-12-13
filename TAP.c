@@ -60,50 +60,6 @@ struct in6_addr generateLinkLocal(char* interfaceName)
     return ll_a;
 }
 
-void trySixSet2(struct ifreq original, struct in6_addr address, int prefixLen)
-{
-	printf("Strat 2, running...\n");
-	
-
-	struct ifreq reqParam;
-	memset(&reqParam, 0, sizeof(struct ifreq));
-	strcpy(reqParam.ifr_name, original.ifr_name);
-	printf("interface name: (1) %s\n", reqParam.ifr_name);
-
-
-	int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
-	ioctl(dummySock, SIOCGIFINDEX, &reqParam);
-	printf("index: %d\n", reqParam.ifr_ifindex);
-	printf("interface name: (2) %s\n", reqParam.ifr_name);
-
-	struct sockaddr_in6 _6addr;
-	memset(&_6addr, 0, sizeof(struct sockaddr_in6));
-	_6addr.sin6_family = AF_INET6;
-	_6addr.sin6_addr = address;
-	struct sockaddr_in6* _6addrPtr = &_6addr;
-	reqParam.ifr_addr = *(struct sockaddr*)_6addrPtr;
-
-	// struct in6_ifreq _6reqParam;
-	// _6reqParam.ifr6_ifindex = reqParam.ifr_ifindex;
-	// _6reqParam.ifr6_prefixlen = prefixLen;
-	// _6reqParam.ifr6_addr = address;
-	
-	
-	printf("status after set: %d\n", ioctl(dummySock, SIOCSIFADDR, &_6addr));
-	printf("interface name: (3) %s\n", reqParam.ifr_name);
-
-// while(true){
-	ioctl(dummySock, SIOCGIFFLAGS, &reqParam);
-	printf("is Up?: %d\n", reqParam.ifr_flags&IFF_UP);
-	// }
-	
-
-	close(dummySock);
-
-	
-	exit(1);
-}
-
 #include <arpa/inet.h>
 
 void trySixSet
