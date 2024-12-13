@@ -1,8 +1,7 @@
 #include "TAP.h"
 
 // Needed for in6_ifreq
-// #include <cstdio>
-// #include <cstdlib>
+#include <arpa/inet.h>
 #include <linux/ipv6.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
@@ -59,8 +58,6 @@ struct in6_addr generateLinkLocal(char* interfaceName)
 
     return ll_a;
 }
-
-#include <arpa/inet.h>
 
 void trySixSet
 (
