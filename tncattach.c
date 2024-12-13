@@ -41,7 +41,6 @@ char* ipv4_addr;
 char* netmask;
 
 char* ipv6_addr;
-char* netmask_v6;
 
 char* tcp_host;
 int tcp_port;
