@@ -40,7 +40,7 @@ void localRand(struct in6_addr* ll_a)
 struct in6_addr generateLinkLocal(char* interfaceName)
 {
     time_t t = time(NULL);
-    srand(t); // TODO: FIXME, use time or something
+    srand(t);
 
     struct in6_addr ll_a;
     memset(&ll_a, 0, sizeof(struct in6_addr));
