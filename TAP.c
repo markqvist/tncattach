@@ -23,10 +23,22 @@ extern char* ipv6_addr;
 extern char* netmask;
 extern void cleanup();
 
+#include<stdlib.h>
+
+void localRand(struct in6_addr* ll_a)
+{
+    for(int i = 2; i < 16; i++)
+    {
+        ll_a->s6_addr[i] = rand();
+    }
+}
+
 // TODO: Allow optional-arg for case where we must also generate the hwaddr
 // (this would be the case whereby we are running without `--ethernet`)
 struct in6_addr generateLinkLocal(char* interfaceName)
 {
+    srand(0); // TODO: FIXME, use time or something
+
     struct in6_addr ll_a;
     memset(&ll_a, 0, sizeof(struct in6_addr));
     ll_a.s6_addr[0] = 0xfe;
@@ -38,6 +50,11 @@ struct in6_addr generateLinkLocal(char* interfaceName)
     // (TODO, should not matter, link-local is interface scoped)
     // TODO: Should tie it to mac address because of uniqueness
     // on the lan it shall attach to (over lora)
+    localRand(&ll_a);
+
+    
+
+
 
     int dummySock = socket(AF_PACKET, SOCK_PACKET, 0);
     if(dummySock < 0)
@@ -332,7 +349,7 @@ int open_tap(void) {
                                     }
                                     else
                                     {
-                                        
+
                                     }
 
                                     // Add link-local address
