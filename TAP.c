@@ -325,6 +325,16 @@ int open_tap(void) {
                                         exit(1);
                                     }
 
+                                    // Choose stratergy for generating link-local address
+                                    if(device_type == IF_TAP)                                
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        
+                                    }
+
                                     // Add link-local address
                                     trySixSet(ifr.ifr_ifindex, generateLinkLocal(if_name), 64);
 
