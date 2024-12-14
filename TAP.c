@@ -33,11 +33,14 @@ void localRand(struct in6_addr* ll_a)
     }
 }
 
+#include<time.h>
+
 // TODO: Allow optional-arg for case where we must also generate the hwaddr
 // (this would be the case whereby we are running without `--ethernet`)
 struct in6_addr generateLinkLocal(char* interfaceName)
 {
-    srand(0); // TODO: FIXME, use time or something
+    time_t t = time(NULL);
+    srand(t); // TODO: FIXME, use time or something
 
     struct in6_addr ll_a;
     memset(&ll_a, 0, sizeof(struct in6_addr));
