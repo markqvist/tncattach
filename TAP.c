@@ -1,11 +1,7 @@
 #include "TAP.h"
 
 // Needed for in6_ifreq
-// #include <arpa/inet.h>
 #include <linux/ipv6.h>
-// #include <netinet/in.h>
-// #include <sys/ioctl.h>
-// #include <sys/socket.h>
 
 char tap_name[IFNAMSIZ];
 
