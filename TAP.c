@@ -1,11 +1,11 @@
 #include "TAP.h"
 
 // Needed for in6_ifreq
-#include <arpa/inet.h>
+// #include <arpa/inet.h>
 #include <linux/ipv6.h>
-#include <netinet/in.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
+// #include <netinet/in.h>
+// #include <sys/ioctl.h>
+// #include <sys/socket.h>
 
 char tap_name[IFNAMSIZ];
 
@@ -43,7 +43,7 @@ void trySixSet
         interfaceIndex
     );
 
-	int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
+	int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
 
 	struct in6_ifreq paramReq;
 	memset(&paramReq, 0, sizeof(struct in6_ifreq));
@@ -53,7 +53,7 @@ void trySixSet
 
 	
     // Try add the address
-	if(ioctl(dummySock, SIOCSIFADDR, &paramReq) < 0)
+	if(ioctl(inet6, SIOCSIFADDR, &paramReq) < 0)
 	{
  		printf
         (
@@ -63,12 +63,12 @@ void trySixSet
             interfaceIndex
         );
  		cleanup();
- 		close(dummySock);
+ 		close(inet6);
  		exit(1);
  	}
 
     printf("Address '%s/%d' added\n", ip_str, prefixLen);
-	close(dummySock);
+	close(inet6);
 }
 
 #include<string.h>
@@ -257,16 +257,17 @@ int open_tap(void) {
                                     if(mtu < 1280)
                                     {
                                         printf("MTU must be 1280 bytes or more for IPv6\n");
+                                        close(inet);
                                         cleanup();
                                         exit(1);
                                     }
 
                                     // Firstly, obtain the interface index by `ifr_name`
-                                    int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
-                                    if(ioctl(dummySock, SIOCGIFINDEX, &ifr) < 0)
+                                    int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
+                                    if(ioctl(inet6, SIOCGIFINDEX, &ifr) < 0)
                                     {
                                         printf("Could not get interface index for interface '%s'\n", ifr.ifr_name);
-                                        close(dummySock);
+                                        close(inet6);
                                         cleanup();
                                         exit(1);
                                     }
@@ -287,7 +288,7 @@ int open_tap(void) {
                                         if(!prefixPart_s)
                                         {
                                             perror("No prefix length was provided"); // TODO: Move logic into arg parsing
-                                            close(dummySock);
+                                            close(inet6);
                                             cleanup();
                                             exit(1);
                                         }
@@ -303,7 +304,7 @@ int open_tap(void) {
                                         if(inet_pton(AF_INET6, ipv6_addr, &six_addr_itself) < 0)
                                         {
                                             printf("Error parsing IPv6 address '%s'\n", ipv6_addr);
-                                            close(dummySock);
+                                            close(inet6);
                                             cleanup();
                                             exit(1);
                                         }
