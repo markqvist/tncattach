@@ -332,7 +332,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 argp_usage(state);
             }
 
-            if(arguments->set_ipv6 || arguments->link_local_v6)
+            if((arguments->set_ipv6 || arguments->link_local_v6) && arguments->mtu < 1280)
             {
                 printf("IPv6 and/or link-loal IPv6 was requested, but the MTU provided is lower than 1280\n");
                 exit(EXIT_FAILURE);
