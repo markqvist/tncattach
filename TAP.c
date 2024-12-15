@@ -326,56 +326,59 @@ int open_tap(void) {
                                         close(dummySock);
                                         cleanup();
                                         exit(1);
-                                    }					
-
-                                    
-                                    char* ipPart = strtok(ipv6_addr, "/");
-                                    char* prefixPart_s = strtok(NULL, "/");
-                                    printf("ip part: %s\n", ipPart);
-
-                                    if(!prefixPart_s)
-                                    {
-                                        perror("No prefix length was provided"); // TODO: Move logic into arg parsing
-                                        close(dummySock);
-                                        cleanup();
-                                        exit(1);
-                                    }
-                                    printf("prefix part: %s\n", prefixPart_s);
-
-                                    long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
-
-
-
-                                    // Convert ASCII IPv6 address to ABI structure
-                                    struct in6_addr six_addr_itself;
-                                    memset(&six_addr_itself, 0, sizeof(struct in6_addr));
-                                    if(inet_pton(AF_INET6, ipv6_addr, &six_addr_itself) < 0)
-                                    {
-                                        printf("Error parsing IPv6 address '%s'\n", ipv6_addr);
-                                        close(dummySock);
-                                        cleanup();
-                                        exit(1);
                                     }
 
-                                    // Choose stratergy for generating link-local address
-                                    if(device_type == IF_TAP)                                
+                                    // If link-local was requested
+                                    if(link_local_v6)
                                     {
-
-                                    }
-                                    else
-                                    {
-
+                                        // Add link-local address
+                                        trySixSet(ifr.ifr_ifindex, generateLinkLocal(if_name), 64);
                                     }
 
-                                    // Add link-local address
-                                    trySixSet(ifr.ifr_ifindex, generateLinkLocal(if_name), 64);
+                                    // If use-specified non-link-local IPv6 was 
+                                    if(set_ipv6)
+                                    {
+                                        char* ipPart = strtok(ipv6_addr, "/");
+                                        char* prefixPart_s = strtok(NULL, "/");
+                                        printf("ip part: %s\n", ipPart);
 
-                                    // Add user's requested address
-                                    trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
+                                        if(!prefixPart_s)
+                                        {
+                                            perror("No prefix length was provided"); // TODO: Move logic into arg parsing
+                                            close(dummySock);
+                                            cleanup();
+                                            exit(1);
+                                        }
+                                        printf("prefix part: %s\n", prefixPart_s);
 
-                                    // FIXME: Allow the ipv6 to be empty and just do link-local
+                                        long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
 
-                                    printf("IPv6 configuration done\n");
+
+
+                                        // Convert ASCII IPv6 address to ABI structure
+                                        struct in6_addr six_addr_itself;
+                                        memset(&six_addr_itself, 0, sizeof(struct in6_addr));
+                                        if(inet_pton(AF_INET6, ipv6_addr, &six_addr_itself) < 0)
+                                        {
+                                            printf("Error parsing IPv6 address '%s'\n", ipv6_addr);
+                                            close(dummySock);
+                                            cleanup();
+                                            exit(1);
+                                        }
+
+                                        // Choose stratergy for generating link-local address
+                                        if(device_type == IF_TAP)                                
+                                        {
+
+                                        }
+                                        else
+                                        {
+
+                                        }
+                                        
+                                        // Add user's requested address
+                                        trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
+                                    }
                                 }
                             }
                         }
