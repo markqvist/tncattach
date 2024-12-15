@@ -41,6 +41,7 @@ char* ipv4_addr;
 char* netmask;
 
 char* ipv6_addr;
+long ipv6_prefixLen;
 
 char* tcp_host;
 int tcp_port;
@@ -488,12 +489,31 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 perror("Sorry, but you had noipv6 set yet want to use ipv6?\n");
                 exit(EXIT_FAILURE);
             }
-            arguments->ipv6 = arg;
+
+            char* ipPart_s = strtok(arg, "/");
+            char* prefixPart_s = strtok(NULL, "/");
+            printf("ipPart_s: %s\n", ipPart_s);
+
+            if(!prefixPart_s)
+            {
+                printf("No prefix length was provided\n");
+                exit(1);
+            }
+            printf("prefixPart_s: %s\n", prefixPart_s);
+
+            long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
+
+
+            arguments->ipv6 = ipPart_s;
+            
             arguments->set_ipv6 = true;
 
-            // Save to the global for other modules to access it
+            // Copy across global IPv6 address
             ipv6_addr = malloc(strlen(arguments->ipv6)+1);
             strcpy(ipv6_addr, arguments->ipv6);
+
+            // Set global IPv6 prefix length
+            ipv6_prefixLen = prefixLen_l;
 
             printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
             arguments->mtu = 1280;

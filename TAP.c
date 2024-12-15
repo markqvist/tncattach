@@ -14,6 +14,7 @@ extern int device_type;
 extern char if_name[IFNAMSIZ];
 extern char* ipv4_addr;
 extern char* ipv6_addr;
+extern long ipv6_prefixLen;
 extern char* netmask;
 extern void cleanup();
 
@@ -259,23 +260,6 @@ int open_tap(void) {
                                         exit(1);
                                     }
 
-                                    char* ipPart = strtok(ipv6_addr, "/");
-                                    char* prefixPart_s = strtok(NULL, "/");
-                                    printf("ip part: %s\n", ipPart);
-
-                                    if(!prefixPart_s)
-                                    {
-                                        printf("No prefix length was provided\n"); // TODO: Move logic into arg parsing
-                                        close(inet6);
-                                        cleanup();
-                                        exit(1);
-                                    }
-                                    printf("prefix part: %s\n", prefixPart_s);
-
-                                    long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
-
-
-
                                     // Convert ASCII IPv6 address to ABI structure
                                     struct in6_addr six_addr_itself;
                                     memset(&six_addr_itself, 0, sizeof(struct in6_addr));
@@ -288,7 +272,7 @@ int open_tap(void) {
                                     }
 
                                     // Add user's requested address
-                                    trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
+                                    trySixSet(ifr.ifr_ifindex, six_addr_itself, ipv6_prefixLen);
 
                                     close(inet6);
                                 }
