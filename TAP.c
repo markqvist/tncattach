@@ -37,6 +37,12 @@ void trySixSet
     );
 
 	int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
+    if(inet6 < 0)
+    {
+        printf("Error opening control socket for adding IPv6 address to interface\n");
+        cleanup();
+        exit(1);
+    }
 
 	struct in6_ifreq paramReq;
 	memset(&paramReq, 0, sizeof(struct in6_ifreq));
