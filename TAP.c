@@ -366,16 +366,6 @@ int open_tap(void) {
                                             exit(1);
                                         }
 
-                                        // Choose stratergy for generating link-local address
-                                        if(device_type == IF_TAP)                                
-                                        {
-
-                                        }
-                                        else
-                                        {
-
-                                        }
-                                        
                                         // Add user's requested address
                                         trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
                                     }
