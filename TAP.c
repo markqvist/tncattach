@@ -64,8 +64,6 @@ void trySixSet
 	close(inet6);
 }
 
-#include<string.h>
-
 int open_tap(void) {
     struct ifreq ifr;
     int fd = open("/dev/net/tun", O_RDWR);
