@@ -244,6 +244,13 @@ int open_tap(void) {
                                 {
                                     // Firstly, obtain the interface index by `ifr_name`
                                     int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
+                                    if(inet6 < 0)
+                                    {
+                                        printf("Error opening control socket for adding IPv6 address to interface\n");
+                                        cleanup();
+                                        exit(1);
+                                    }
+
                                     if(ioctl(inet6, SIOCGIFINDEX, &ifr) < 0)
                                     {
                                         printf("Could not get interface index for interface '%s'\n", ifr.ifr_name);
