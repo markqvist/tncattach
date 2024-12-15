@@ -494,7 +494,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             // Save to the global for other modules to access it
             ipv6_addr = malloc(strlen(arguments->ipv6)+1);
             strcpy(ipv6_addr, arguments->ipv6);
-            printf("v6 now: %s\n", ipv6_addr);
 
             printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
             arguments->mtu = 1280;
