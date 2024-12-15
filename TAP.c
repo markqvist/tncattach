@@ -284,6 +284,8 @@ int open_tap(void) {
 
                                     // Add user's requested address
                                     trySixSet(ifr.ifr_ifindex, six_addr_itself, prefixLen_l);
+
+                                    close(inet6);
                                 }
                             }
                         }
