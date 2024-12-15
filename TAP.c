@@ -317,13 +317,14 @@ int open_tap(void) {
                                         cleanup();
                                         exit(1);
                                     }
-                                    
+
                                     // Firstly, obtain the interface index by `ifr_name`
                                     int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
                                     if(ioctl(dummySock, SIOCGIFINDEX, &ifr) < 0)
                                     {
                                         printf("Could not get interface index for interface '%s'\n", ifr.ifr_name);
                                         close(dummySock);
+                                        cleanup();
                                         exit(1);
                                     }					
 
@@ -336,6 +337,7 @@ int open_tap(void) {
                                     {
                                         perror("No prefix length was provided"); // TODO: Move logic into arg parsing
                                         close(dummySock);
+                                        cleanup();
                                         exit(1);
                                     }
                                     printf("prefix part: %s\n", prefixPart_s);
@@ -351,6 +353,7 @@ int open_tap(void) {
                                     {
                                         printf("Error parsing IPv6 address '%s'", ipv6_addr);
                                         close(dummySock);
+                                        cleanup();
                                         exit(1);
                                     }
 
