@@ -244,15 +244,6 @@ int open_tap(void) {
 
                                 if(set_ipv6 || link_local_v6)
                                 {
-                                    // linux IPv6 mtu check
-                                    if(mtu < 1280)
-                                    {
-                                        printf("MTU must be 1280 bytes or more for IPv6\n");
-                                        close(inet);
-                                        cleanup();
-                                        exit(1);
-                                    }
-
                                     // Firstly, obtain the interface index by `ifr_name`
                                     int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
                                     if(ioctl(inet6, SIOCGIFINDEX, &ifr) < 0)
