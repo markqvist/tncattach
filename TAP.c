@@ -13,6 +13,7 @@ extern bool verbose;
 extern bool noipv6;
 extern bool set_ipv4;
 extern bool set_ipv6;
+extern bool link_local_v6;
 extern bool set_netmask;
 extern bool noup;
 extern int mtu;
@@ -99,30 +100,38 @@ void trySixSet
         interfaceIndex
     );
 
+    if(mtu < 1280)
+    {
+        printf("MTU must be 1280 bytes or more for IPv6\n");
+        cleanup();
+        exit(1);
+    }
+
 	int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
 
-
-
-	
 	struct in6_ifreq paramReq;
 	memset(&paramReq, 0, sizeof(struct in6_ifreq));
 	paramReq.ifr6_ifindex = interfaceIndex;
- 	printf("paramReq.ifr6_ifindex: %d\n", paramReq.ifr6_ifindex);
  	paramReq.ifr6_prefixlen = prefixLen;
  	paramReq.ifr6_addr = address;
 
 	
-
+    // Try add the address
 	if(ioctl(dummySock, SIOCSIFADDR, &paramReq) < 0)
 	{
- 		// perror("Fokop");
- 		printf("Fokop\n");
+ 		printf
+        (
+            "There was an errror assigning address '%s/%d' to if_index %d\n",
+            ip_str,
+            prefixLen,
+            interfaceIndex
+        );
  		cleanup();
  		close(dummySock);
  		exit(1);
  	}
 
-    printf("Sucessfully applied IPv6 configuration");
+    printf("Address '%s/%d' added\n", ip_str, prefixLen);
 	close(dummySock);
 }
 
@@ -306,7 +315,7 @@ int open_tap(void) {
                                     }
                                 }
 
-                                if(set_ipv6) {
+                                if(set_ipv6 || link_local_v6) {
                                 	printf("TODO: Implement set ipv6\n");
 
                                     // Firstly, obtain the interface index by `ifr_name`
@@ -363,7 +372,7 @@ int open_tap(void) {
 
                                     // FIXME: Allow the ipv6 to be empty and just do link-local
 
-                                    printf("IPv6 settings SHOULD be done now\n");
+                                    printf("IPv6 configuration done\n");
                                 }
                             }
                         }
