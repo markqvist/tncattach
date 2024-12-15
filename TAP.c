@@ -95,13 +95,7 @@ int open_tap(void) {
             strcpy(if_name, ifr.ifr_name);
 
             
-            int inet = socket(set_ipv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);
-            printf("inet fd: %d\n", inet);
-            printf("tun/tap handle fd: %d\n", fd);
-            printf("set_ipv4: %d\n", set_ipv4);
-            printf("set_ipv6: %d\n", set_ipv6);
-            
-            // inet=fd;
+            int inet = socket(AF_INET, SOCK_DGRAM, 0);
             if (inet == -1) {
             	  char err[100];
             		sprintf(err, "Could not open %s socket", set_ipv4 ? "AF_INET" : "AF_INET6");
