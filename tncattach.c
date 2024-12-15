@@ -35,7 +35,6 @@ bool noup = false;
 bool daemonize = false;
 bool set_ipv4 = false;
 bool set_ipv6 = false;
-bool link_local_v6 = false; // FIXME: make this true by default
 bool set_netmask = false;
 bool kiss_over_tcp = false;
 char* ipv4_addr;
@@ -641,7 +640,6 @@ int main(int argc, char **argv) {
     if (arguments.set_ipv4) set_ipv4 = true;
     if (arguments.set_netmask) set_netmask = true;
     if (arguments.set_ipv6) set_ipv6 = true;
-    if (arguments.link_local_v6) link_local_v6 = true;
     if (arguments.noup) noup = true;
     mtu = arguments.mtu;
 
