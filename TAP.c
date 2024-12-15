@@ -24,63 +24,6 @@ extern char* ipv6_addr;
 extern char* netmask;
 extern void cleanup();
 
-#include<stdlib.h>
-
-void localRand(struct in6_addr* ll_a)
-{
-    for(int i = 2; i < 16; i++)
-    {
-        ll_a->s6_addr[i] = rand();
-    }
-}
-
-#include<time.h>
-
-// TODO: Allow optional-arg for case where we must also generate the hwaddr
-// (this would be the case whereby we are running without `--ethernet`)
-struct in6_addr generateLinkLocal(char* interfaceName)
-{
-    time_t t = time(NULL);
-    srand(t);
-
-    struct in6_addr ll_a;
-    memset(&ll_a, 0, sizeof(struct in6_addr));
-    ll_a.s6_addr[0] = 0xfe;
-    ll_a.s6_addr[1] = 0x80;
-
-    // TODO: Set the rest here
-
-    // TODO: Loop till we generate an address NOT in use
-    // (TODO, should not matter, link-local is interface scoped)
-    // TODO: Should tie it to mac address because of uniqueness
-    // on the lan it shall attach to (over lora)
-    localRand(&ll_a);
-
-    
-
-
-
-    int dummySock = socket(AF_PACKET, SOCK_PACKET, 0);
-    if(dummySock < 0)
-    {
-        printf("Failed to open configuration socket in order to generate link-local address\n");
-        close(dummySock);
-        exit(1);
-    }
-
-    struct ifreq reqParams;
-    memset(&reqParams, 0, sizeof(reqParams));
-    strcpy(reqParams.ifr_name, interfaceName);
-
-    if(ioctl(dummySock, SIOCGIFHWADDR, &reqParams) < 0)
-    {
-        printf("Failed to fetch hardware address Failed to open configuration socket in order to generate link-local address\n");
-        close(dummySock);
-        exit(1);
-    }
-
-    return ll_a;
-}
 
 void trySixSet
 (
@@ -164,8 +107,8 @@ int open_tap(void) {
             int inet = socket(set_ipv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);
             printf("inet fd: %d\n", inet);
             printf("tun/tap handle fd: %d\n", fd);
-						printf("set_ipv4: %d\n", set_ipv4);
-						printf("set_ipv6: %d\n", set_ipv6);
+            printf("set_ipv4: %d\n", set_ipv4);
+            printf("set_ipv6: %d\n", set_ipv6);
             
             // inet=fd;
             if (inet == -1) {
@@ -331,8 +274,7 @@ int open_tap(void) {
                                     // If link-local was requested
                                     if(link_local_v6)
                                     {
-                                        // Add link-local address
-                                        trySixSet(ifr.ifr_ifindex, generateLinkLocal(if_name), 64);
+                                        // Do nothing; kernel adds for us
                                     }
 
                                     // If use-specified non-link-local IPv6 was 
