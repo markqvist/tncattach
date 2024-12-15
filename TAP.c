@@ -100,6 +100,7 @@ void trySixSet
         interfaceIndex
     );
 
+    // linux IPv6 mtu check
     if(mtu < 1280)
     {
         printf("MTU must be 1280 bytes or more for IPv6\n");
@@ -315,9 +316,8 @@ int open_tap(void) {
                                     }
                                 }
 
-                                if(set_ipv6 || link_local_v6) {
-                                	printf("TODO: Implement set ipv6\n");
-
+                                if(set_ipv6 || link_local_v6)
+                                {
                                     // Firstly, obtain the interface index by `ifr_name`
                                     int dummySock = socket(AF_INET6, SOCK_DGRAM, 0);
                                     if(ioctl(dummySock, SIOCGIFINDEX, &ifr) < 0)
