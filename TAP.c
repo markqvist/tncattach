@@ -351,7 +351,7 @@ int open_tap(void) {
                                     memset(&six_addr_itself, 0, sizeof(struct in6_addr));
                                     if(inet_pton(AF_INET6, ipv6_addr, &six_addr_itself) < 0)
                                     {
-                                        printf("Error parsing IPv6 address '%s'", ipv6_addr);
+                                        printf("Error parsing IPv6 address '%s'\n", ipv6_addr);
                                         close(dummySock);
                                         cleanup();
                                         exit(1);
