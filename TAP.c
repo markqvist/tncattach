@@ -252,7 +252,7 @@ int open_tap(void) {
 
                                     if(!prefixPart_s)
                                     {
-                                        perror("No prefix length was provided"); // TODO: Move logic into arg parsing
+                                        printf("No prefix length was provided\n"); // TODO: Move logic into arg parsing
                                         close(inet6);
                                         cleanup();
                                         exit(1);
