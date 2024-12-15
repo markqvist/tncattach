@@ -9,6 +9,7 @@
 #include <linux/if_tun.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <linux/ipv6.h>
 #include "Constants.h"
 
 int open_tap(void);

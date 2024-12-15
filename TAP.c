@@ -1,8 +1,5 @@
 #include "TAP.h"
 
-// Needed for in6_ifreq
-#include <linux/ipv6.h>
-
 char tap_name[IFNAMSIZ];
 
 extern bool verbose;
