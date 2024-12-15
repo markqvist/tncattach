@@ -6,7 +6,7 @@ extern bool verbose;
 extern bool noipv6;
 extern bool set_ipv4;
 extern bool set_ipv6;
-extern bool link_local_v6;
+extern bool set_linklocal;
 extern bool set_netmask;
 extern bool noup;
 extern int mtu;
@@ -241,7 +241,7 @@ int open_tap(void) {
                                     }
                                 }
 
-                                if(set_ipv6)
+                                if(set_ipv6 || set_linklocal)
                                 {
                                     // Firstly, obtain the interface index by `ifr_name`
                                     int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -259,6 +259,18 @@ int open_tap(void) {
                                         cleanup();
                                         exit(1);
                                     }
+
+																		// if link-local was NOT requested and interface
+																		// has been up'd -> then kernel would have added
+																		// a link-local already, this removes it
+                                    if(!set_linklocal & !noup)
+                                    {
+                                    		// TODO: Get all addresses that start with fe80
+                                    }
+                                    // Else it could have been no-up; hence you will have to remove
+                                    // the link-local yourself
+                                    // Other else is link-local was requested, then we don't care (whether
+                                    // up'd or not as it will inevitably be added by the kernel)
 
                                     // Convert ASCII IPv6 address to ABI structure
                                     struct in6_addr six_addr_itself;

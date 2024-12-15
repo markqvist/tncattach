@@ -35,6 +35,7 @@ bool noup = false;
 bool daemonize = false;
 bool set_ipv4 = false;
 bool set_ipv6 = false;
+bool set_linklocal = false;
 bool set_netmask = false;
 bool kiss_over_tcp = false;
 char* ipv4_addr;
