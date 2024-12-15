@@ -331,6 +331,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 printf("Error: Invalid MTU specified\r\n\r\n");
                 argp_usage(state);
             }
+
+            if(arguments->set_ipv6 || arguments->link_local_v6)
+            {
+                printf("IPv6 and/or link-loal IPv6 was requested, but the MTU provided is lower than 1280\n");
+                exit(EXIT_FAILURE);
+            }
+
             break;
 
         case 't':
@@ -489,6 +496,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             ipv6_addr = malloc(strlen(arguments->ipv6)+1);
             strcpy(ipv6_addr, arguments->ipv6);
             printf("v6 now: %s\n", ipv6_addr);
+
+            printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
+            arguments->mtu = 1280;
             break;
 
         case 'l':
@@ -498,6 +508,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 exit(EXIT_FAILURE);
             }
             arguments->link_local_v6 = true;
+
+            printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
+            arguments->mtu = 1280;
             break;
 						
         case 'n':
