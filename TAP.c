@@ -97,9 +97,7 @@ int open_tap(void) {
             
             int inet = socket(AF_INET, SOCK_DGRAM, 0);
             if (inet == -1) {
-            	  char err[100];
-            		sprintf(err, "Could not open %s socket", set_ipv4 ? "AF_INET" : "AF_INET6");
-                perror(err);
+                perror("Could not open control socket");
                 cleanup();
                 exit(1);
             } else {
