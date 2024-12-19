@@ -508,6 +508,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 								printf("Prefix length '%s' is not numeric\n", prefixPart_s);
 								exit(EXIT_FAILURE);
 						}
+						else if(!(prefixLen_l >= 0 && prefixLen_l <= 128))
+						{
+								printf("Prefix length '%s' is not within valid range of 0-128\n", prefixPart_s);
+								exit(EXIT_FAILURE);
+						}
 
             arguments->ipv6 = ipPart_s;
             
