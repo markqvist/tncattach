@@ -37,7 +37,7 @@ void trySixSet
         interfaceIndex
     );
 
-	int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
+    int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
     if(inet6 < 0)
     {
         printf("Error opening control socket for adding IPv6 address to interface\n");
@@ -45,30 +45,30 @@ void trySixSet
         exit(1);
     }
 
-	struct in6_ifreq paramReq;
-	memset(&paramReq, 0, sizeof(struct in6_ifreq));
-	paramReq.ifr6_ifindex = interfaceIndex;
- 	paramReq.ifr6_prefixlen = prefixLen;
- 	paramReq.ifr6_addr = address;
+    struct in6_ifreq paramReq;
+    memset(&paramReq, 0, sizeof(struct in6_ifreq));
+    paramReq.ifr6_ifindex = interfaceIndex;
+    paramReq.ifr6_prefixlen = prefixLen;
+    paramReq.ifr6_addr = address;
 
-	
+
     // Try add the address
-	if(ioctl(inet6, SIOCSIFADDR, &paramReq) < 0)
-	{
- 		printf
+    if(ioctl(inet6, SIOCSIFADDR, &paramReq) < 0)
+    {
+        printf
         (
             "There was an errror assigning address '%s/%d' to if_index %d\n",
             ip_str,
             prefixLen,
             interfaceIndex
         );
- 		cleanup();
- 		close(inet6);
- 		exit(1);
- 	}
+        cleanup();
+        close(inet6);
+        exit(1);
+    }
 
     printf("Address '%s/%d' added\n", ip_str, prefixLen);
-	close(inet6);
+    close(inet6);
 }
 
 int open_tap(void) {
@@ -260,9 +260,9 @@ int open_tap(void) {
                                         exit(1);
                                     }
 
-																		// if link-local was NOT requested and interface
-																		// has been up'd -> then kernel would have added
-																		// a link-local already, this removes it
+                                    // if link-local was NOT requested and interface
+                                    // has been up'd -> then kernel would have added
+                                    // a link-local already, this removes it
                                     if(!set_linklocal & !noup)
                                     {
                                     		// TODO: Get all addresses that start with fe80
