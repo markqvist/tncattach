@@ -29,7 +29,7 @@ void trySixSet
     char ip_str[INET6_ADDRSTRLEN+1];
     inet_ntop(AF_INET6, &address, ip_str, INET6_ADDRSTRLEN+1);
 
-	printf
+    printf
     (
         "Adding IPv6 address of '%s/%d' to interface at if_index %d\n",
         ip_str,
