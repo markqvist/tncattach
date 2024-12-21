@@ -504,15 +504,15 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
             long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
 
-						if(prefixLen_l == 0) {
-								printf("Prefix length '%s' is not numeric\n", prefixPart_s);
-								exit(EXIT_FAILURE);
-						}
-						else if(!(prefixLen_l >= 0 && prefixLen_l <= 128))
-						{
-								printf("Prefix length '%s' is not within valid range of 0-128\n", prefixPart_s);
-								exit(EXIT_FAILURE);
-						}
+            if(prefixLen_l == 0) {
+                printf("Prefix length '%s' is not numeric\n", prefixPart_s);
+                exit(EXIT_FAILURE);
+            }
+            else if(!(prefixLen_l >= 0 && prefixLen_l <= 128))
+            {
+                printf("Prefix length '%s' is not within valid range of 0-128\n", prefixPart_s);
+                exit(EXIT_FAILURE);
+            }
 
             arguments->ipv6 = ipPart_s;
             
@@ -540,7 +540,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
             arguments->mtu = 1280;
             break;
-						
+
         case 'n':
             arguments->noipv6 = true;
             if(arguments->set_ipv6)
