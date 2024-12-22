@@ -5,14 +5,71 @@ char tap_name[IFNAMSIZ];
 extern bool verbose;
 extern bool noipv6;
 extern bool set_ipv4;
+extern bool set_ipv6;
+extern bool set_linklocal;
 extern bool set_netmask;
 extern bool noup;
 extern int mtu;
 extern int device_type;
 extern char if_name[IFNAMSIZ];
 extern char* ipv4_addr;
+extern char* ipv6_addr;
+extern long ipv6_prefixLen;
 extern char* netmask;
 extern void cleanup();
+
+
+void trySixSet
+(
+    int interfaceIndex,
+    struct in6_addr address,
+    int prefixLen
+)
+{
+    char ip_str[INET6_ADDRSTRLEN+1];
+    inet_ntop(AF_INET6, &address, ip_str, INET6_ADDRSTRLEN+1);
+
+    printf
+    (
+        "Adding IPv6 address of '%s/%d' to interface at if_index %d\n",
+        ip_str,
+        prefixLen,
+        interfaceIndex
+    );
+
+    int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
+    if(inet6 < 0)
+    {
+        printf("Error opening control socket for adding IPv6 address to interface\n");
+        cleanup();
+        exit(1);
+    }
+
+    struct in6_ifreq paramReq;
+    memset(&paramReq, 0, sizeof(struct in6_ifreq));
+    paramReq.ifr6_ifindex = interfaceIndex;
+    paramReq.ifr6_prefixlen = prefixLen;
+    paramReq.ifr6_addr = address;
+
+
+    // Try add the address
+    if(ioctl(inet6, SIOCSIFADDR, &paramReq) < 0)
+    {
+        printf
+        (
+            "There was an errror assigning address '%s/%d' to if_index %d\n",
+            ip_str,
+            prefixLen,
+            interfaceIndex
+        );
+        cleanup();
+        close(inet6);
+        exit(1);
+    }
+
+    printf("Address '%s/%d' added\n", ip_str, prefixLen);
+    close(inet6);
+}
 
 int open_tap(void) {
     struct ifreq ifr;
@@ -43,10 +100,11 @@ int open_tap(void) {
             exit(1);
         } else {
             strcpy(if_name, ifr.ifr_name);
+
             
             int inet = socket(AF_INET, SOCK_DGRAM, 0);
             if (inet == -1) {
-                perror("Could not open AF_INET socket");
+                perror("Could not open control socket");
                 cleanup();
                 exit(1);
             } else {
@@ -181,6 +239,54 @@ int open_tap(void) {
                                             }
                                         }
                                     }
+                                }
+
+                                if(set_ipv6 || set_linklocal)
+                                {
+                                    // Firstly, obtain the interface index by `ifr_name`
+                                    int inet6 = socket(AF_INET6, SOCK_DGRAM, 0);
+                                    if(inet6 < 0)
+                                    {
+                                        printf("Error opening control socket for adding IPv6 address to interface\n");
+                                        cleanup();
+                                        exit(1);
+                                    }
+
+                                    if(ioctl(inet6, SIOCGIFINDEX, &ifr) < 0)
+                                    {
+                                        printf("Could not get interface index for interface '%s'\n", ifr.ifr_name);
+                                        close(inet6);
+                                        cleanup();
+                                        exit(1);
+                                    }
+
+                                    // if link-local was NOT requested and interface
+                                    // has been up'd -> then kernel would have added
+                                    // a link-local already, this removes it
+                                    if(!set_linklocal & !noup)
+                                    {
+                                    		// TODO: Get all addresses that start with fe80
+                                    }
+                                    // Else it could have been no-up; hence you will have to remove
+                                    // the link-local yourself
+                                    // Other else is link-local was requested, then we don't care (whether
+                                    // up'd or not as it will inevitably be added by the kernel)
+
+                                    // Convert ASCII IPv6 address to ABI structure
+                                    struct in6_addr six_addr_itself;
+                                    memset(&six_addr_itself, 0, sizeof(struct in6_addr));
+                                    if(inet_pton(AF_INET6, ipv6_addr, &six_addr_itself) < 0)
+                                    {
+                                        printf("Error parsing IPv6 address '%s'\n", ipv6_addr);
+                                        close(inet6);
+                                        cleanup();
+                                        exit(1);
+                                    }
+
+                                    // Add user's requested address
+                                    trySixSet(ifr.ifr_ifindex, six_addr_itself, ipv6_prefixLen);
+
+                                    close(inet6);
                                 }
                             }
                         }

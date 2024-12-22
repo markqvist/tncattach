@@ -34,10 +34,15 @@ bool noipv6 = false;
 bool noup = false;
 bool daemonize = false;
 bool set_ipv4 = false;
+bool set_ipv6 = false;
+bool set_linklocal = false;
 bool set_netmask = false;
 bool kiss_over_tcp = false;
 char* ipv4_addr;
 char* netmask;
+
+char* ipv6_addr;
+long ipv6_prefixLen;
 
 char* tcp_host;
 int tcp_port;
@@ -269,15 +274,17 @@ static struct argp_option options[] = {
     { "mtu", 'm', "MTU", 0, "Specify interface MTU", 1},
     { "ethernet", 'e', 0, 0, "Create a full ethernet device", 2},
     { "ipv4", 'i', "IP_ADDRESS", 0, "Configure an IPv4 address on interface", 3},
-    { "noipv6", 'n', 0, 0, "Filter IPv6 traffic from reaching TNC", 4},
-    { "noup", 1, 0, 0, "Only create interface, don't bring it up", 5},
-    { "kisstcp", 'T', 0, 0, "Use KISS over TCP instead of serial port", 6},
-    { "tcphost", 'H', "TCP_HOST", 0, "Host to connect to when using KISS over TCP", 7},
-    { "tcpport", 'P', "TCP_PORT", 0, "TCP port when using KISS over TCP", 8},
-    { "interval", 't', "SECONDS", 0, "Maximum interval between station identifications", 9},
-    { "id", 's', "CALLSIGN", 0, "Station identification data", 10},
-    { "daemon", 'd', 0, 0, "Run tncattach as a daemon", 11},
-    { "verbose", 'v', 0, 0, "Enable verbose output", 12},
+    { "ipv6", '6', "IP6_ADDRESS", 0, "Configure an IPv6 address on interface", 4},
+    { "ll", 'l', 0, 0, "Add a link-local Ipv6 address", 5},
+    { "noipv6", 'n', 0, 0, "Filter IPv6 traffic from reaching TNC", 6},
+    { "noup", 1, 0, 0, "Only create interface, don't bring it up", 7},
+    { "kisstcp", 'T', 0, 0, "Use KISS over TCP instead of serial port", 8},
+    { "tcphost", 'H', "TCP_HOST", 0, "Host to connect to when using KISS over TCP", 9},
+    { "tcpport", 'P', "TCP_PORT", 0, "TCP port when using KISS over TCP", 10},
+    { "interval", 't', "SECONDS", 0, "Maximum interval between station identifications", 11},
+    { "id", 's', "CALLSIGN", 0, "Station identification data", 12},
+    { "daemon", 'd', 0, 0, "Run tncattach as a daemon", 13},
+    { "verbose", 'v', 0, 0, "Enable verbose output", 14},
     { 0 }
 };
 
@@ -285,6 +292,7 @@ static struct argp_option options[] = {
 struct arguments {
     char *args[N_ARGS];
     char *ipv4;
+    char *ipv6;
     char *id;
     bool valid_id;
     int id_interval;
@@ -296,6 +304,9 @@ struct arguments {
     bool verbose;
     bool set_ipv4;
     bool set_netmask;
+    bool set_ipv6;
+    bool link_local_v6;
+    bool set_netmask_v6;
     bool noipv6;
     bool noup;
     bool kiss_over_tcp;
@@ -321,6 +332,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 printf("Error: Invalid MTU specified\r\n\r\n");
                 argp_usage(state);
             }
+
+            if((arguments->set_ipv6 || arguments->link_local_v6) && arguments->mtu < 1280)
+            {
+                printf("IPv6 and/or link-local IPv6 was requested, but the MTU provided is lower than 1280\n");
+                exit(EXIT_FAILURE);
+            }
+
             break;
 
         case 't':
@@ -466,9 +484,70 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             }
 
             break;
+        case '6':
+            if(arguments->noipv6)
+            {
+                perror("Sorry, but you had noipv6 set yet want to use ipv6?\n");
+                exit(EXIT_FAILURE);
+            }
+
+            char* ipPart_s = strtok(arg, "/");
+            char* prefixPart_s = strtok(NULL, "/");
+            printf("ipPart_s: %s\n", ipPart_s);
+
+            if(!prefixPart_s)
+            {
+                printf("No prefix length was provided\n");
+                exit(1);
+            }
+            printf("prefixPart_s: %s\n", prefixPart_s);
+
+            long prefixLen_l = strtol(prefixPart_s, NULL, 10); // TODO: Add handling here for errors (using errno)
+
+            if(prefixLen_l == 0) {
+                printf("Prefix length '%s' is not numeric\n", prefixPart_s);
+                exit(EXIT_FAILURE);
+            }
+            else if(!(prefixLen_l >= 0 && prefixLen_l <= 128))
+            {
+                printf("Prefix length '%s' is not within valid range of 0-128\n", prefixPart_s);
+                exit(EXIT_FAILURE);
+            }
+
+            arguments->ipv6 = ipPart_s;
+            
+            arguments->set_ipv6 = true;
+
+            // Copy across global IPv6 address
+            ipv6_addr = malloc(strlen(arguments->ipv6)+1);
+            strcpy(ipv6_addr, arguments->ipv6);
+
+            // Set global IPv6 prefix length
+            ipv6_prefixLen = prefixLen_l;
+
+            printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
+            arguments->mtu = 1280;
+            break;
+
+        case 'l':
+            if(arguments->noipv6)
+            {
+                perror("Sorry, but you had noipv6 set yet want to use ipv6 link-local?\n");
+                exit(EXIT_FAILURE);
+            }
+            arguments->link_local_v6 = true;
+
+            printf("MTU was %d, setting to minimum of %d as is required for IPv6\n", arguments->mtu, 1280);
+            arguments->mtu = 1280;
+            break;
 
         case 'n':
             arguments->noipv6 = true;
+            if(arguments->set_ipv6)
+            {
+                printf("Requested no IPv6 yet you have set the IPv6 to '%s'\n", arguments->ipv6);
+                exit(1);
+            }
             break;
 
         case 'd':
@@ -559,6 +638,9 @@ int main(int argc, char **argv) {
     arguments.verbose = false;
     arguments.set_ipv4 = false;
     arguments.set_netmask = false;
+    arguments.set_ipv6 = false;
+    arguments.link_local_v6 = false;
+    arguments.set_netmask_v6 = false;
     arguments.noipv6 = false;
     arguments.daemon = false;
     arguments.noup = false;
@@ -586,6 +668,7 @@ int main(int argc, char **argv) {
     if (arguments.noipv6) noipv6 = true;
     if (arguments.set_ipv4) set_ipv4 = true;
     if (arguments.set_netmask) set_netmask = true;
+    if (arguments.set_ipv6) set_ipv6 = true;
     if (arguments.noup) noup = true;
     mtu = arguments.mtu;
 
